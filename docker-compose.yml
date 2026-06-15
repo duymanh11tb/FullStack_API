@@ -6,7 +6,7 @@ services:
       context: ./Comment & Notify Service/QLDA_PCCV
       dockerfile: Dockerfile
     ports:
-      - "5003:80"
+      - "5004:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       # Chú ý: Đổi lại chuỗi kết nối cho đúng với DB của bạn trên VPS
