@@ -108,18 +108,26 @@ async function handleRegister() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-bg);
+  background-color: var(--bg-primary);
   padding: var(--space-4);
 }
 
 .auth-card {
   width: 100%;
   max-width: 420px;
-  background: var(--color-white);
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-radius: var(--radius-xl);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-xl);
   padding: var(--space-8);
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .auth-header {
@@ -134,24 +142,29 @@ async function handleRegister() {
 }
 
 .logo-icon {
-  width: 52px;
-  height: 52px;
-  background: var(--color-primary);
+  width: 56px;
+  height: 56px;
+  background: var(--gradient-primary);
   border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  box-shadow: var(--shadow-md), var(--gradient-glow);
 }
 
 .auth-header h1 {
   font-size: var(--font-size-2xl);
   margin-bottom: var(--space-2);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .auth-subtitle {
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .auth-form {
@@ -163,38 +176,46 @@ async function handleRegister() {
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   margin-bottom: var(--space-4);
+  font-weight: var(--font-weight-medium);
 }
 
 .alert-error {
   background: var(--color-danger-light);
   color: var(--color-danger);
-  border: 1px solid rgba(220, 38, 38, 0.2);
+  border: 1px solid rgba(244, 63, 94, 0.2);
 }
 
 .alert-success {
   background: var(--color-success-light);
   color: var(--color-success);
-  border: 1px solid rgba(22, 163, 74, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .alert-success a {
   color: var(--color-success);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
   text-decoration: underline;
 }
 
 .auth-footer {
   text-align: center;
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border-color);
 }
 
 .auth-footer p {
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
 }
 
 .auth-footer a {
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  transition: all var(--transition-fast);
+}
+
+.auth-footer a:hover {
+  color: var(--color-primary-hover);
+  text-shadow: var(--gradient-glow);
 }
 </style>

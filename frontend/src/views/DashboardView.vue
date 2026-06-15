@@ -191,34 +191,53 @@ onMounted(() => {
 }
 
 .stat-card {
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
   padding: var(--space-5);
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  transition: box-shadow var(--transition-fast);
+  transition: all var(--transition-slow);
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-card:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+  border-color: rgba(99, 102, 241, 0.3);
 }
 
 .stat-icon {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  color: white;
+  box-shadow: var(--shadow-md);
 }
 
-.stat-icon-blue { background: var(--color-primary-light); color: var(--color-primary); }
-.stat-icon-green { background: var(--color-success-light); color: var(--color-success); }
-.stat-icon-orange { background: var(--color-warning-light); color: var(--color-warning); }
-.stat-icon-purple { background: #EDE9FE; color: #7C3AED; }
+.stat-icon-blue { 
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+.stat-icon-green { 
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+.stat-icon-orange { 
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+.stat-icon-purple { 
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
 
 .stat-content {
   display: flex;
@@ -229,20 +248,27 @@ onMounted(() => {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   line-height: 1;
+  background: var(--text-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .stat-label {
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin-top: var(--space-1);
+  color: var(--text-secondary);
+  margin-top: var(--space-2);
+  font-weight: var(--font-weight-medium);
 }
 
 /* Section */
 .section {
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .section-header {
@@ -250,11 +276,13 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: var(--space-5) var(--space-6);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .section-header h2 {
   font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
 }
 
 .view-all-link {
@@ -262,29 +290,37 @@ onMounted(() => {
   align-items: center;
   gap: var(--space-1);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  transition: all var(--transition-fast);
+}
+
+.view-all-link:hover {
+  color: var(--color-primary-hover);
+  text-shadow: var(--gradient-glow);
 }
 
 /* Project Grid */
 .project-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--space-4);
+  gap: var(--space-5);
   padding: var(--space-6);
 }
 
 .project-card {
-  border: 1px solid var(--color-border);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: var(--space-5);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-slow);
 }
 
 .project-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px) scale(1.01);
 }
 
 .project-card-header {

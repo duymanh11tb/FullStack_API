@@ -176,16 +176,19 @@ const onDeleteTask = async (taskId) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: var(--accent-primary);
+  background: var(--gradient-primary);
   color: white;
   padding: 10px 20px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   font-weight: 600;
-  transition: background-color var(--transition-fast);
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
-  background-color: var(--accent-primary-hover);
+  background: var(--gradient-primary-hover);
+  box-shadow: var(--shadow-md), var(--gradient-glow);
+  transform: translateY(-2px);
 }
 
 .board-layout {
@@ -201,9 +204,12 @@ const onDeleteTask = async (taskId) => {
   width: 320px;
   display: flex;
   flex-direction: column;
-  background-color: rgba(30, 41, 59, 0.4);
-  border-radius: 12px;
-  border: 1px solid var(--glass-border);
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
 }
 
 .column-header {
@@ -212,6 +218,7 @@ const onDeleteTask = async (taskId) => {
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .column-title {
@@ -219,21 +226,23 @@ const onDeleteTask = async (taskId) => {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-weight: var(--font-weight-bold);
 }
 
 .status-indicator {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
 }
 
 .task-count {
-  background: var(--bg-primary);
-  color: var(--text-secondary);
-  padding: 2px 8px;
-  border-radius: 12px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .column-content {

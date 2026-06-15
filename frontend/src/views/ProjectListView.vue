@@ -250,23 +250,26 @@ onMounted(() => {
 }
 
 .project-card {
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-slow);
+  box-shadow: var(--shadow-sm);
 }
 
 .project-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px) scale(1.01);
 }
 
 .card-top {
   padding: var(--space-5);
-  border-top: 3px solid;
+  border-top: 4px solid;
 }
 
 .card-header {

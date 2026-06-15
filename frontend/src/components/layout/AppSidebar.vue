@@ -114,6 +114,9 @@ function isActive(path) {
   width: var(--sidebar-width);
   height: 100vh;
   background: var(--sidebar-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-right: 1px solid var(--glass-border);
   display: flex;
   flex-direction: column;
   position: fixed;
