@@ -61,7 +61,7 @@
         </router-link>
       </div>
 
-      <div class="nav-section">
+      <div class="nav-section" v-if="isAdmin">
         <span class="nav-section-title">HỆ THỐNG</span>
 
         <router-link to="/settings" class="nav-item" :class="{ active: isActive('/settings') }" id="nav-settings">
@@ -80,6 +80,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useNotificationStore } from '../../stores/notifications'
+import { useAuthStore } from '../../stores/auth'
 
 defineProps({
   collapsed: Boolean
@@ -87,7 +88,10 @@ defineProps({
 
 const route = useRoute()
 const notifStore = useNotificationStore()
+const authStore = useAuthStore()
+
 const unreadCount = computed(() => notifStore.unreadCount)
+const isAdmin = computed(() => authStore.isAdmin)
 
 function isActive(path) {
   if (path === '/') return route.path === '/'

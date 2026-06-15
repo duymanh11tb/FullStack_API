@@ -3,19 +3,22 @@ import axios from 'axios'
 // ── API 1: Project & Member Service ──
 export const projectAPI = axios.create({
   baseURL: import.meta.env.VITE_PROJECT_API_URL,
-  headers: { 'Content-Type': 'application/json' }
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 10000 // 10 seconds timeout
 })
 
 // ── API 2: Comment & Notify Service ──
 export const notifyAPI = axios.create({
   baseURL: import.meta.env.VITE_NOTIFY_API_URL,
-  headers: { 'Content-Type': 'application/json' }
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 10000
 })
 
 // ── API 3: Task Service ──
 export const taskAPI = axios.create({
   baseURL: import.meta.env.VITE_TASK_API_URL,
-  headers: { 'Content-Type': 'application/json' }
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 10000
 })
 
 // ── Request interceptor: attach JWT token ──
@@ -35,7 +38,8 @@ taskAPI.interceptors.request.use(attachToken, Promise.reject)
 function handleError(error) {
   // Xử lý lỗi mạng / từ chối kết nối
   if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-    alert('⚠️ Không thể kết nối tới API');
+    console.error('⚠️ Không thể kết nối tới API:', error.config?.baseURL || error.config?.url);
+    // Loại bỏ alert() để không chặn giao diện (blocking UI) khi một API bị lỗi
   }
 
   // Xử lý lỗi 401 Không có quyền truy cập

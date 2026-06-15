@@ -5,7 +5,7 @@
         <h1>Dự án</h1>
         <p class="text-secondary">Quản lý tất cả dự án của bạn</p>
       </div>
-      <BaseButton variant="primary" @click="showCreateModal = true" id="btn-create-project">
+      <BaseButton v-if="isAdmin" variant="primary" @click="showCreateModal = true" id="btn-create-project">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="12" y1="5" x2="12" y2="19" />
           <line x1="5" y1="12" x2="19" y2="12" />
@@ -77,9 +77,9 @@
     <EmptyState
       v-else
       title="Chưa có dự án nào"
-      description="Bắt đầu bằng cách tạo dự án đầu tiên."
+      description="Chưa có dự án nào được tạo hoặc bạn chưa tham gia dự án nào."
     >
-      <BaseButton variant="primary" class="mt-4" @click="showCreateModal = true">
+      <BaseButton v-if="isAdmin" variant="primary" class="mt-4" @click="showCreateModal = true">
         Tạo dự án mới
       </BaseButton>
     </EmptyState>
@@ -119,8 +119,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useProjectStore } from '../stores/projects'
+import { useAuthStore } from '../stores/auth'
 import StatusBadge from '../components/common/StatusBadge.vue'
 import BaseButton from '../components/common/BaseButton.vue'
 import BaseModal from '../components/common/BaseModal.vue'
@@ -129,6 +130,8 @@ import LoadingSpinner from '../components/common/LoadingSpinner.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 
 const projectStore = useProjectStore()
+const authStore = useAuthStore()
+const isAdmin = computed(() => authStore.isAdmin)
 const showCreateModal = ref(false)
 const creating = ref(false)
 const formError = ref('')

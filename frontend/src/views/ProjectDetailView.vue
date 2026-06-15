@@ -109,10 +109,6 @@
                       @change="handleUpdateRole(member.id, $event.target.value)"
                       class="role-select"
                     >
-                      <option value="Owner">Owner</option>
-                      <option value="Admin">Admin</option>
-                      <option value="Member">Member</option>
-                      <option value="Viewer">Viewer</option>
                       <option value="0">Owner</option>
                       <option value="1">Admin</option>
                       <option value="2">Member</option>
@@ -233,12 +229,6 @@
           </div>
           <EmptyState v-else title="Chưa có milestone nào" description="Tạo milestone để theo dõi tiến độ dự án." />
         </div>
-        <!-- Discussion Tab -->
-        <div v-if="activeTab === 'discussion'" class="tab-panel discussion-panel">
-          <div class="panel-header">
-            <h3>Thảo luận</h3>
-          </div>
-        </div>
       </div>
     </template>
 
@@ -355,8 +345,7 @@ const projectId = computed(() => route.params.id)
 const tabs = computed(() => [
   { key: 'members', label: 'Thành viên', count: members.value.length },
   { key: 'sprints', label: 'Sprints', count: sprints.value.length },
-  { key: 'milestones', label: 'Milestones', count: milestones.value.length },
-  { key: 'discussion', label: 'Thảo luận' }
+  { key: 'milestones', label: 'Milestones', count: milestones.value.length }
 ])
 
 const avatarColors = ['#2563EB', '#7C3AED', '#DC2626', '#D97706', '#16A34A', '#0891B2', '#DB2777', '#4F46E5']
@@ -387,32 +376,29 @@ async function loadProjectData() {
     project.value = res
 
     if (project.value) {
-      // Load sub-resources
+      // Load sub-resources concurrently to prevent blocking
+      const fetchTasks = []
+      
       if (project.value.members) {
         members.value = project.value.members
       } else {
-        try {
-          const mRes = await getMembers(projectId.value)
-          members.value = mRes.data.data || mRes.data || []
-        } catch { members.value = [] }
+        fetchTasks.push(getMembers(projectId.value).then(res => members.value = res.data?.data || res.data || []).catch(() => members.value = []))
       }
 
       if (project.value.sprints) {
         sprints.value = project.value.sprints
       } else {
-        try {
-          const sRes = await getSprints(projectId.value)
-          sprints.value = sRes.data.data || sRes.data || []
-        } catch { sprints.value = [] }
+        fetchTasks.push(getSprints(projectId.value).then(res => sprints.value = res.data?.data || res.data || []).catch(() => sprints.value = []))
       }
 
       if (project.value.milestones) {
         milestones.value = project.value.milestones
       } else {
-        try {
-          const msRes = await getMilestones(projectId.value)
-          milestones.value = msRes.data.data || msRes.data || []
-        } catch { milestones.value = [] }
+        fetchTasks.push(getMilestones(projectId.value).then(res => milestones.value = res.data?.data || res.data || []).catch(() => milestones.value = []))
+      }
+
+      if (fetchTasks.length > 0) {
+        await Promise.allSettled(fetchTasks)
       }
 
       // Populate edit form
