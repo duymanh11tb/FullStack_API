@@ -94,7 +94,7 @@ public class NotificationEventService : INotificationEventService
                 Id = Guid.NewGuid(),
                 UserId = user.Id,
                 Type = NotificationType.CommentMention,
-                Message = $"You were mentioned in a task comment.",
+                Message = $"Bạn đã được nhắc đến trong một bình luận công việc.",
                 ReferenceId = comment.TaskId,
                 ReferenceType = ReferenceType.Task,
                 IsRead = false,
@@ -173,12 +173,12 @@ public class NotificationEventService : INotificationEventService
 
         return notificationType switch
         {
-            NotificationType.TaskAssigned => $"You were assigned to task '{await GetTaskTitleAsync(referenceId, cancellationToken)}'.",
-            NotificationType.TaskStatusChanged => $"Task '{await GetTaskTitleAsync(referenceId, cancellationToken)}' status was changed.",
-            NotificationType.CommentMention => $"You were mentioned in a task comment.",
-            NotificationType.SprintStarted => $"Sprint '{await GetSprintNameAsync(referenceId, cancellationToken)}' has started.",
-            NotificationType.MemberAdded => $"You were added to project '{await GetProjectNameAsync(referenceId, cancellationToken)}'.",
-            _ => "You have a new notification."
+            NotificationType.TaskAssigned => $"Bạn đã được phân công vào công việc '{await GetTaskTitleAsync(referenceId, cancellationToken)}'.",
+            NotificationType.TaskStatusChanged => $"Trạng thái của công việc '{await GetTaskTitleAsync(referenceId, cancellationToken)}' đã thay đổi.",
+            NotificationType.CommentMention => $"Bạn đã được nhắc đến trong một bình luận công việc.",
+            NotificationType.SprintStarted => $"Sprint '{await GetSprintNameAsync(referenceId, cancellationToken)}' đã bắt đầu.",
+            NotificationType.MemberAdded => $"Bạn đã được thêm vào dự án '{await GetProjectNameAsync(referenceId, cancellationToken)}'.",
+            _ => "Bạn có một thông báo mới."
         };
     }
 

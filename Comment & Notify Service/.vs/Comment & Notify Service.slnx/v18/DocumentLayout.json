@@ -31,7 +31,7 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "QLDA_PCCV",
+              "Title": "QLDA_PCCV.csproj",
               "DocumentMoniker": "C:\\Users\\admin\\Documents\\BTL_FullStack\\Comment \u0026 Notify Service\\QLDA_PCCV\\QLDA_PCCV.csproj",
               "RelativeDocumentMoniker": "QLDA_PCCV\\QLDA_PCCV.csproj",
               "ToolTip": "C:\\Users\\admin\\Documents\\BTL_FullStack\\Comment \u0026 Notify Service\\QLDA_PCCV\\QLDA_PCCV.csproj",
@@ -63,8 +63,7 @@
               "RelativeToolTip": "QLDA_PCCV\\Program.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAADMAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-10T10:00:09.122Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-10T10:00:09.122Z"
             }
           ]
         }

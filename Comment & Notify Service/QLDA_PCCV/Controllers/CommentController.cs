@@ -31,14 +31,6 @@ public class CommentController : ControllerBase
             return Unauthorized();
         }
 
-        // Validate Task existence
-        var taskExists = await _context.Tasks.AnyAsync(t => t.Id == request.TaskId);
-        if (!taskExists)
-        {
-            return NotFound(new { Message = $"Task with ID {request.TaskId} does not exist." });
-        }
-
-        // Validate Parent Comment if specified
         if (request.ParentCommentId.HasValue)
         {
             var parentComment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == request.ParentCommentId.Value);
@@ -103,7 +95,6 @@ public class CommentController : ControllerBase
             .OrderBy(c => c.CreatedAt)
             .ToListAsync();
 
-        // Map to a read-friendly list, filtering/masking deleted content
         var commentModels = comments.Select(c => new CommentDto
         {
             Id = c.Id,

@@ -161,3 +161,4 @@ C:\Users\admin\Documents\BTL_FullStack\Comment & Notify Service\QLDA_PCCV\obj\De
 C:\Users\admin\Documents\BTL_FullStack\Comment & Notify Service\QLDA_PCCV\obj\Debug\net10.0\ref\QLDA_PCCV.dll
 C:\Users\admin\Documents\BTL_FullStack\Comment & Notify Service\QLDA_PCCV\bin\Debug\net10.0\NuGet.Config
 C:\Users\admin\Documents\BTL_FullStack\Comment & Notify Service\QLDA_PCCV\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.InMemory.dll
+C:\Users\admin\Documents\BTL_FullStack\Comment & Notify Service\QLDA_PCCV\obj\Debug\net10.0\QLDA_PCCV.sourcelink.json

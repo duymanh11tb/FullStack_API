@@ -1,0 +1,484 @@
+﻿{
+    "openapi":  "3.0.1",
+    "info":  {
+                 "title":  "TaskService",
+                 "version":  "1.0"
+             },
+    "paths":  {
+                  "/api/Task":  {
+                                    "get":  {
+                                                "tags":  [
+                                                             "Task"
+                                                         ],
+                                                "responses":  {
+                                                                  "200":  {
+                                                                              "description":  "OK",
+                                                                              "content":  {
+                                                                                              "text/plain":  {
+                                                                                                                 "schema":  {
+                                                                                                                                "type":  "array",
+                                                                                                                                "items":  {
+                                                                                                                                              "$ref":  "#/components/schemas/TaskItem"
+                                                                                                                                          }
+                                                                                                                            }
+                                                                                                             },
+                                                                                              "application/json":  {
+                                                                                                                       "schema":  {
+                                                                                                                                      "type":  "array",
+                                                                                                                                      "items":  {
+                                                                                                                                                    "$ref":  "#/components/schemas/TaskItem"
+                                                                                                                                                }
+                                                                                                                                  }
+                                                                                                                   },
+                                                                                              "text/json":  {
+                                                                                                                "schema":  {
+                                                                                                                               "type":  "array",
+                                                                                                                               "items":  {
+                                                                                                                                             "$ref":  "#/components/schemas/TaskItem"
+                                                                                                                                         }
+                                                                                                                           }
+                                                                                                            }
+                                                                                          }
+                                                                          }
+                                                              }
+                                            },
+                                    "post":  {
+                                                 "tags":  [
+                                                              "Task"
+                                                          ],
+                                                 "requestBody":  {
+                                                                     "content":  {
+                                                                                     "application/json":  {
+                                                                                                              "schema":  {
+                                                                                                                             "$ref":  "#/components/schemas/TaskItem"
+                                                                                                                         }
+                                                                                                          },
+                                                                                     "text/json":  {
+                                                                                                       "schema":  {
+                                                                                                                      "$ref":  "#/components/schemas/TaskItem"
+                                                                                                                  }
+                                                                                                   },
+                                                                                     "application/*+json":  {
+                                                                                                                "schema":  {
+                                                                                                                               "$ref":  "#/components/schemas/TaskItem"
+                                                                                                                           }
+                                                                                                            }
+                                                                                 }
+                                                                 },
+                                                 "responses":  {
+                                                                   "200":  {
+                                                                               "description":  "OK",
+                                                                               "content":  {
+                                                                                               "text/plain":  {
+                                                                                                                  "schema":  {
+                                                                                                                                 "$ref":  "#/components/schemas/TaskItem"
+                                                                                                                             }
+                                                                                                              },
+                                                                                               "application/json":  {
+                                                                                                                        "schema":  {
+                                                                                                                                       "$ref":  "#/components/schemas/TaskItem"
+                                                                                                                                   }
+                                                                                                                    },
+                                                                                               "text/json":  {
+                                                                                                                 "schema":  {
+                                                                                                                                "$ref":  "#/components/schemas/TaskItem"
+                                                                                                                            }
+                                                                                                             }
+                                                                                           }
+                                                                           }
+                                                               }
+                                             }
+                                },
+                  "/api/Task/{id}":  {
+                                         "get":  {
+                                                     "tags":  [
+                                                                  "Task"
+                                                              ],
+                                                     "parameters":  [
+                                                                        {
+                                                                            "name":  "id",
+                                                                            "in":  "path",
+                                                                            "required":  true,
+                                                                            "schema":  {
+                                                                                           "type":  "string",
+                                                                                           "format":  "uuid"
+                                                                                       }
+                                                                        }
+                                                                    ],
+                                                     "responses":  {
+                                                                       "200":  {
+                                                                                   "description":  "OK",
+                                                                                   "content":  {
+                                                                                                   "text/plain":  {
+                                                                                                                      "schema":  {
+                                                                                                                                     "$ref":  "#/components/schemas/TaskItem"
+                                                                                                                                 }
+                                                                                                                  },
+                                                                                                   "application/json":  {
+                                                                                                                            "schema":  {
+                                                                                                                                           "$ref":  "#/components/schemas/TaskItem"
+                                                                                                                                       }
+                                                                                                                        },
+                                                                                                   "text/json":  {
+                                                                                                                     "schema":  {
+                                                                                                                                    "$ref":  "#/components/schemas/TaskItem"
+                                                                                                                                }
+                                                                                                                 }
+                                                                                               }
+                                                                               }
+                                                                   }
+                                                 },
+                                         "put":  {
+                                                     "tags":  [
+                                                                  "Task"
+                                                              ],
+                                                     "parameters":  [
+                                                                        {
+                                                                            "name":  "id",
+                                                                            "in":  "path",
+                                                                            "required":  true,
+                                                                            "schema":  {
+                                                                                           "type":  "string",
+                                                                                           "format":  "uuid"
+                                                                                       }
+                                                                        }
+                                                                    ],
+                                                     "requestBody":  {
+                                                                         "content":  {
+                                                                                         "application/json":  {
+                                                                                                                  "schema":  {
+                                                                                                                                 "$ref":  "#/components/schemas/TaskItem"
+                                                                                                                             }
+                                                                                                              },
+                                                                                         "text/json":  {
+                                                                                                           "schema":  {
+                                                                                                                          "$ref":  "#/components/schemas/TaskItem"
+                                                                                                                      }
+                                                                                                       },
+                                                                                         "application/*+json":  {
+                                                                                                                    "schema":  {
+                                                                                                                                   "$ref":  "#/components/schemas/TaskItem"
+                                                                                                                               }
+                                                                                                                }
+                                                                                     }
+                                                                     },
+                                                     "responses":  {
+                                                                       "200":  {
+                                                                                   "description":  "OK"
+                                                                               }
+                                                                   }
+                                                 },
+                                         "delete":  {
+                                                        "tags":  [
+                                                                     "Task"
+                                                                 ],
+                                                        "parameters":  [
+                                                                           {
+                                                                               "name":  "id",
+                                                                               "in":  "path",
+                                                                               "required":  true,
+                                                                               "schema":  {
+                                                                                              "type":  "string",
+                                                                                              "format":  "uuid"
+                                                                                          }
+                                                                           }
+                                                                       ],
+                                                        "responses":  {
+                                                                          "200":  {
+                                                                                      "description":  "OK"
+                                                                                  }
+                                                                      }
+                                                    }
+                                     },
+                  "/api/Task/{id}/status":  {
+                                                "patch":  {
+                                                              "tags":  [
+                                                                           "Task"
+                                                                       ],
+                                                              "parameters":  [
+                                                                                 {
+                                                                                     "name":  "id",
+                                                                                     "in":  "path",
+                                                                                     "required":  true,
+                                                                                     "schema":  {
+                                                                                                    "type":  "string",
+                                                                                                    "format":  "uuid"
+                                                                                                }
+                                                                                 }
+                                                                             ],
+                                                              "requestBody":  {
+                                                                                  "content":  {
+                                                                                                  "application/json":  {
+                                                                                                                           "schema":  {
+                                                                                                                                          "$ref":  "#/components/schemas/UpdateTaskStatusRequest"
+                                                                                                                                      }
+                                                                                                                       },
+                                                                                                  "text/json":  {
+                                                                                                                    "schema":  {
+                                                                                                                                   "$ref":  "#/components/schemas/UpdateTaskStatusRequest"
+                                                                                                                               }
+                                                                                                                },
+                                                                                                  "application/*+json":  {
+                                                                                                                             "schema":  {
+                                                                                                                                            "$ref":  "#/components/schemas/UpdateTaskStatusRequest"
+                                                                                                                                        }
+                                                                                                                         }
+                                                                                              }
+                                                                              },
+                                                              "responses":  {
+                                                                                "200":  {
+                                                                                            "description":  "OK"
+                                                                                        }
+                                                                            }
+                                                          }
+                                            },
+                  "/WeatherForecast":  {
+                                           "get":  {
+                                                       "tags":  [
+                                                                    "WeatherForecast"
+                                                                ],
+                                                       "operationId":  "GetWeatherForecast",
+                                                       "responses":  {
+                                                                         "200":  {
+                                                                                     "description":  "OK",
+                                                                                     "content":  {
+                                                                                                     "text/plain":  {
+                                                                                                                        "schema":  {
+                                                                                                                                       "type":  "array",
+                                                                                                                                       "items":  {
+                                                                                                                                                     "$ref":  "#/components/schemas/WeatherForecast"
+                                                                                                                                                 }
+                                                                                                                                   }
+                                                                                                                    },
+                                                                                                     "application/json":  {
+                                                                                                                              "schema":  {
+                                                                                                                                             "type":  "array",
+                                                                                                                                             "items":  {
+                                                                                                                                                           "$ref":  "#/components/schemas/WeatherForecast"
+                                                                                                                                                       }
+                                                                                                                                         }
+                                                                                                                          },
+                                                                                                     "text/json":  {
+                                                                                                                       "schema":  {
+                                                                                                                                      "type":  "array",
+                                                                                                                                      "items":  {
+                                                                                                                                                    "$ref":  "#/components/schemas/WeatherForecast"
+                                                                                                                                                }
+                                                                                                                                  }
+                                                                                                                   }
+                                                                                                 }
+                                                                                 }
+                                                                     }
+                                                   }
+                                       }
+              },
+    "components":  {
+                       "schemas":  {
+                                       "Board":  {
+                                                     "type":  "object",
+                                                     "properties":  {
+                                                                        "boardId":  {
+                                                                                        "type":  "string",
+                                                                                        "format":  "uuid"
+                                                                                    },
+                                                                        "name":  {
+                                                                                     "type":  "string",
+                                                                                     "nullable":  true
+                                                                                 },
+                                                                        "description":  {
+                                                                                            "type":  "string",
+                                                                                            "nullable":  true
+                                                                                        },
+                                                                        "createdAt":  {
+                                                                                          "type":  "string",
+                                                                                          "format":  "date-time"
+                                                                                      },
+                                                                        "updatedAt":  {
+                                                                                          "type":  "string",
+                                                                                          "format":  "date-time"
+                                                                                      },
+                                                                        "taskItems":  {
+                                                                                          "type":  "array",
+                                                                                          "items":  {
+                                                                                                        "$ref":  "#/components/schemas/TaskItem"
+                                                                                                    },
+                                                                                          "nullable":  true
+                                                                                      }
+                                                                    },
+                                                     "additionalProperties":  false
+                                                 },
+                                       "SubTask":  {
+                                                       "type":  "object",
+                                                       "properties":  {
+                                                                          "subTaskId":  {
+                                                                                            "type":  "string",
+                                                                                            "format":  "uuid"
+                                                                                        },
+                                                                          "taskItemId":  {
+                                                                                             "type":  "string",
+                                                                                             "format":  "uuid"
+                                                                                         },
+                                                                          "title":  {
+                                                                                        "type":  "string",
+                                                                                        "nullable":  true
+                                                                                    },
+                                                                          "isCompleted":  {
+                                                                                              "type":  "boolean"
+                                                                                          },
+                                                                          "createdAt":  {
+                                                                                            "type":  "string",
+                                                                                            "format":  "date-time"
+                                                                                        },
+                                                                          "taskItem":  {
+                                                                                           "$ref":  "#/components/schemas/TaskItem"
+                                                                                       }
+                                                                      },
+                                                       "additionalProperties":  false
+                                                   },
+                                       "TaskItem":  {
+                                                        "type":  "object",
+                                                        "properties":  {
+                                                                           "taskId":  {
+                                                                                          "type":  "string",
+                                                                                          "format":  "uuid"
+                                                                                      },
+                                                                           "boardId":  {
+                                                                                           "type":  "string",
+                                                                                           "format":  "uuid"
+                                                                                       },
+                                                                           "title":  {
+                                                                                         "type":  "string",
+                                                                                         "nullable":  true
+                                                                                     },
+                                                                           "description":  {
+                                                                                               "type":  "string",
+                                                                                               "nullable":  true
+                                                                                           },
+                                                                           "priority":  {
+                                                                                            "type":  "integer",
+                                                                                            "format":  "int32"
+                                                                                        },
+                                                                           "colorLabel":  {
+                                                                                              "type":  "string",
+                                                                                              "nullable":  true
+                                                                                          },
+                                                                           "deadline":  {
+                                                                                            "type":  "string",
+                                                                                            "format":  "date-time",
+                                                                                            "nullable":  true
+                                                                                        },
+                                                                           "currentStatus":  {
+                                                                                                 "$ref":  "#/components/schemas/TaskStatus"
+                                                                                             },
+                                                                           "assigneeId":  {
+                                                                                              "type":  "string",
+                                                                                              "format":  "uuid",
+                                                                                              "nullable":  true
+                                                                                          },
+                                                                           "createdAt":  {
+                                                                                             "type":  "string",
+                                                                                             "format":  "date-time"
+                                                                                         },
+                                                                           "updatedAt":  {
+                                                                                             "type":  "string",
+                                                                                             "format":  "date-time"
+                                                                                         },
+                                                                           "board":  {
+                                                                                         "$ref":  "#/components/schemas/Board"
+                                                                                     },
+                                                                           "subTasks":  {
+                                                                                            "type":  "array",
+                                                                                            "items":  {
+                                                                                                          "$ref":  "#/components/schemas/SubTask"
+                                                                                                      },
+                                                                                            "nullable":  true
+                                                                                        },
+                                                                           "workLogs":  {
+                                                                                            "type":  "array",
+                                                                                            "items":  {
+                                                                                                          "$ref":  "#/components/schemas/WorkLog"
+                                                                                                      },
+                                                                                            "nullable":  true
+                                                                                        }
+                                                                       },
+                                                        "additionalProperties":  false
+                                                    },
+                                       "TaskStatus":  {
+                                                          "enum":  [
+                                                                       0,
+                                                                       1,
+                                                                       2,
+                                                                       3,
+                                                                       4
+                                                                   ],
+                                                          "type":  "integer",
+                                                          "format":  "int32"
+                                                      },
+                                       "UpdateTaskStatusRequest":  {
+                                                                       "type":  "object",
+                                                                       "properties":  {
+                                                                                          "status":  {
+                                                                                                         "$ref":  "#/components/schemas/TaskStatus"
+                                                                                                     }
+                                                                                      },
+                                                                       "additionalProperties":  false
+                                                                   },
+                                       "WeatherForecast":  {
+                                                               "type":  "object",
+                                                               "properties":  {
+                                                                                  "date":  {
+                                                                                               "type":  "string",
+                                                                                               "format":  "date"
+                                                                                           },
+                                                                                  "temperatureC":  {
+                                                                                                       "type":  "integer",
+                                                                                                       "format":  "int32"
+                                                                                                   },
+                                                                                  "temperatureF":  {
+                                                                                                       "type":  "integer",
+                                                                                                       "format":  "int32",
+                                                                                                       "readOnly":  true
+                                                                                                   },
+                                                                                  "summary":  {
+                                                                                                  "type":  "string",
+                                                                                                  "nullable":  true
+                                                                                              }
+                                                                              },
+                                                               "additionalProperties":  false
+                                                           },
+                                       "WorkLog":  {
+                                                       "type":  "object",
+                                                       "properties":  {
+                                                                          "workLogId":  {
+                                                                                            "type":  "string",
+                                                                                            "format":  "uuid"
+                                                                                        },
+                                                                          "taskItemId":  {
+                                                                                             "type":  "string",
+                                                                                             "format":  "uuid"
+                                                                                         },
+                                                                          "memberId":  {
+                                                                                           "type":  "string",
+                                                                                           "format":  "uuid"
+                                                                                       },
+                                                                          "hoursSpent":  {
+                                                                                             "type":  "number",
+                                                                                             "format":  "double"
+                                                                                         },
+                                                                          "loggedAt":  {
+                                                                                           "type":  "string",
+                                                                                           "format":  "date-time"
+                                                                                       },
+                                                                          "note":  {
+                                                                                       "type":  "string",
+                                                                                       "nullable":  true
+                                                                                   },
+                                                                          "taskItem":  {
+                                                                                           "$ref":  "#/components/schemas/TaskItem"
+                                                                                       }
+                                                                      },
+                                                       "additionalProperties":  false
+                                                   }
+                                   }
+                   }
+}

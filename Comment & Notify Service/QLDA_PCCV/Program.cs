@@ -33,6 +33,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddControllers();
 builder.Services.AddScoped<INotificationEventService, NotificationEventService>();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -63,6 +73,13 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    dbContext.Database.Migrate();
+    await SeedData.InitializeAsync(dbContext);
+}
+
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
@@ -72,6 +89,7 @@ app.UseSwaggerUI(options =>
 
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
+app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
