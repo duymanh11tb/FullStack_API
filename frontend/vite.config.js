@@ -17,7 +17,7 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/proxy-task/, '')
       },
       '/proxy-notify': {
-        target: 'http://103.178.235.78:5004',
+        target: 'http://103.178.235.78:5003',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/proxy-notify/, '')
       }
