@@ -9,7 +9,7 @@ using QLDA_PCCV.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultDb")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultDb")));
 
 var jwtSecret = builder.Configuration["Jwt:SecretKey"]
     ?? throw new InvalidOperationException("Jwt:SecretKey is required.");
