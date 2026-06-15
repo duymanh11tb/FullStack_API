@@ -6,10 +6,11 @@ services:
       context: ./Comment & Notify Service/QLDA_PCCV
       dockerfile: Dockerfile
     ports:
-      - "5003:8080"
+      - "5003:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultDb=Server=sqlserver;Database=QLDA_PCCV;User=sa;Password=manhduy11@;TrustServerCertificate=True;Encrypt=False
+      # Chú ý: Đổi lại chuỗi kết nối cho đúng với DB của bạn trên VPS
+      # - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=QLDA;User=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;
     depends_on:
       - sqlserver
     restart: always
