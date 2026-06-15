@@ -11,9 +11,10 @@ echo "================================================="
 # echo "📦 Đang kéo code mới từ Git..."
 # git pull origin main
 
-# 2. Build và khởi động lại các container
-echo "🐳 Đang build và chạy Docker containers..."
-docker-compose up -d --build
+# 2. Khởi động các container bằng Docker Compose
+echo "🚀 Đang khởi chạy các container..."
+docker compose down
+docker compose up -d --build
 
 # 3. Dọn dẹp các images thừa để tránh đầy ổ cứng
 echo "🧹 Đang dọn dẹp các image thừa..."
