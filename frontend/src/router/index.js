@@ -48,6 +48,12 @@ const routes = [
     name: 'Tasks',
     component: () => import('../views/TaskBoard.vue'),
     meta: { requiresAuth: false } // No auth for now, based on Swagger
+  },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: () => import('../views/AdminView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
 
@@ -59,11 +65,15 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
+  const user = JSON.parse(localStorage.getItem('user') || 'null')
+  const isAdmin = user && (user.role === 1 || user.role === 'Admin')
 
   if (to.meta.requiresAuth && !token) {
     next({ name: 'Login' })
   } else if (to.meta.guest && token) {
     next({ name: 'Dashboard' })
+  } else if (to.meta.requiresAdmin && !isAdmin) {
+    next({ name: 'Dashboard' }) // Redirect non-admins to dashboard
   } else {
     next()
   }
