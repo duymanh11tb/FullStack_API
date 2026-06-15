@@ -66,7 +66,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const user = JSON.parse(localStorage.getItem('user') || 'null')
-  const isAdmin = user && (user.role === 1 || user.role === 'Admin')
+  const isAdmin = user && (user.role === 1 || user.role === 0 || user.role === 'Admin' || user.role === 'admin' || user.Role === 1 || user.Role === 'Admin')
 
   if (to.meta.requiresAuth && !token) {
     next({ name: 'Login' })
