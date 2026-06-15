@@ -52,8 +52,8 @@
           </svg>
         </div>
         <div class="notif-body">
-          <p class="notif-message">{{ notif.message || notif.detail || 'Thông báo mới' }}</p>
-          <p v-if="notif.detail && notif.message" class="notif-detail">{{ notif.detail }}</p>
+          <p class="notif-message">{{ notif.displayMessage || notif.message || notif.detail || 'Thông báo mới' }}</p>
+          <p v-if="notif.detail && notif.displayMessage" class="notif-detail">{{ notif.detail }}</p>
           <span class="notif-time">{{ formatTime(notif.createdAt) }}</span>
         </div>
         <div class="notif-status">

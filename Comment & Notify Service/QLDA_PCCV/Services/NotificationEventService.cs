@@ -14,12 +14,10 @@ public interface INotificationEventService
 public class NotificationEventService : INotificationEventService
 {
     private readonly AppDbContext _context;
-    private readonly IHttpClientFactory _httpClientFactory;
 
-    public NotificationEventService(AppDbContext context, IHttpClientFactory httpClientFactory)
+    public NotificationEventService(AppDbContext context)
     {
         _context = context;
-        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<NotificationEventResult> ConsumeAsync(NotificationEventRequest request, CancellationToken cancellationToken = default)
@@ -119,30 +117,7 @@ public class NotificationEventService : INotificationEventService
 
         if (notificationType == NotificationType.SprintStarted && recipientIds.Count == 0 && request.ProjectId.HasValue)
         {
-            try
-            {
-                var client = _httpClientFactory.CreateClient("ProjectApi");
-                var response = await client.GetAsync($"/api/projects/{request.ProjectId.Value}/members", cancellationToken);
-                if (response.IsSuccessStatusCode)
-                {
-                    var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                    using var doc = System.Text.Json.JsonDocument.Parse(content);
-                    if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
-                    {
-                        foreach (var item in doc.RootElement.EnumerateArray())
-                        {
-                            if (item.TryGetProperty("userId", out var uid) || item.TryGetProperty("UserId", out uid))
-                            {
-                                if (uid.TryGetGuid(out var parsedUid) || Guid.TryParse(uid.GetString(), out parsedUid))
-                                {
-                                    recipientIds.Add(parsedUid);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            catch { /* Ignore errors and return empty list */ }
+            // Project Members must be provided by the event publisher since we don't have access to the Project API here.
         }
 
         if (recipientIds.Count == 0)
@@ -195,11 +170,11 @@ public class NotificationEventService : INotificationEventService
 
         return notificationType switch
         {
-            NotificationType.TaskAssigned => $"Bạn đã được phân công vào công việc '{await GetTaskTitleAsync(referenceId, cancellationToken)}'.",
-            NotificationType.TaskStatusChanged => $"Trạng thái của công việc '{await GetTaskTitleAsync(referenceId, cancellationToken)}' đã thay đổi.",
-            NotificationType.CommentMention => $"Bạn đã được nhắc đến trong một bình luận công việc.",
-            NotificationType.SprintStarted => $"Sprint '{await GetSprintNameAsync(referenceId, cancellationToken)}' đã bắt đầu.",
-            NotificationType.MemberAdded => $"Bạn đã được thêm vào dự án '{await GetProjectNameAsync(referenceId, cancellationToken)}'.",
+            NotificationType.TaskAssigned => "Bạn đã được phân công vào một công việc mới.",
+            NotificationType.TaskStatusChanged => "Trạng thái của một công việc đã thay đổi.",
+            NotificationType.CommentMention => "Bạn đã được nhắc đến trong một bình luận công việc.",
+            NotificationType.SprintStarted => "Một Sprint mới đã bắt đầu.",
+            NotificationType.MemberAdded => "Bạn đã được thêm vào một dự án.",
             _ => "Bạn có một thông báo mới."
         };
     }
@@ -292,66 +267,6 @@ public class NotificationEventService : INotificationEventService
     }
 
     private static string NormalizeEventType(string eventType) => eventType.Trim().ToLowerInvariant().Replace('_', '.');
-
-    private async Task<string> GetTaskTitleAsync(Guid taskId, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var client = _httpClientFactory.CreateClient("TaskApi");
-            var response = await client.GetAsync($"/api/tasks/{taskId}", cancellationToken);
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                using var doc = System.Text.Json.JsonDocument.Parse(content);
-                if (doc.RootElement.TryGetProperty("title", out var titleProp) && titleProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                    return titleProp.GetString() ?? taskId.ToString();
-                if (doc.RootElement.TryGetProperty("Title", out var titleProp2) && titleProp2.ValueKind == System.Text.Json.JsonValueKind.String)
-                    return titleProp2.GetString() ?? taskId.ToString();
-            }
-        }
-        catch { /* Fallback */ }
-        return taskId.ToString();
-    }
-
-    private async Task<string> GetProjectNameAsync(Guid projectId, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var client = _httpClientFactory.CreateClient("ProjectApi");
-            var response = await client.GetAsync($"/api/projects/{projectId}", cancellationToken);
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                using var doc = System.Text.Json.JsonDocument.Parse(content);
-                if (doc.RootElement.TryGetProperty("name", out var nameProp) && nameProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                    return nameProp.GetString() ?? projectId.ToString();
-                if (doc.RootElement.TryGetProperty("Name", out var nameProp2) && nameProp2.ValueKind == System.Text.Json.JsonValueKind.String)
-                    return nameProp2.GetString() ?? projectId.ToString();
-            }
-        }
-        catch { /* Fallback */ }
-        return projectId.ToString();
-    }
-
-    private async Task<string> GetSprintNameAsync(Guid sprintId, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var client = _httpClientFactory.CreateClient("ProjectApi");
-            var response = await client.GetAsync($"/api/sprints/{sprintId}", cancellationToken);
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                using var doc = System.Text.Json.JsonDocument.Parse(content);
-                if (doc.RootElement.TryGetProperty("name", out var nameProp) && nameProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                    return nameProp.GetString() ?? sprintId.ToString();
-                if (doc.RootElement.TryGetProperty("Name", out var nameProp2) && nameProp2.ValueKind == System.Text.Json.JsonValueKind.String)
-                    return nameProp2.GetString() ?? sprintId.ToString();
-            }
-        }
-        catch { /* Fallback */ }
-        return sprintId.ToString();
-    }
 }
 
 public class NotificationEventRequest
