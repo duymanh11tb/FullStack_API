@@ -24,7 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             entity.ToTable("Users");
             entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).HasDefaultValueSql("NEWID()");
+            entity.Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
             entity.Property(x => x.Email).HasMaxLength(200).IsRequired();
             entity.Property(x => x.Username).HasMaxLength(100).IsRequired();
             entity.Property(x => x.PasswordHash).HasMaxLength(500).IsRequired();
@@ -32,8 +32,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(x => x.AvatarUrl).HasMaxLength(500);
             entity.Property(x => x.Role).HasConversion<string>().HasMaxLength(20).HasDefaultValue(UserRole.User).IsRequired();
             entity.Property(x => x.IsActive).HasDefaultValue(true);
-            entity.Property(x => x.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(x => x.UpdatedAt).HasColumnType("datetime");
+            entity.Property(x => x.CreatedAt).HasColumnType("timestamp with time zone").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(x => x.UpdatedAt).HasColumnType("timestamp with time zone");
 
             entity.HasIndex(x => x.Email).IsUnique();
             entity.HasIndex(x => x.Username).IsUnique();
@@ -43,11 +43,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             entity.ToTable("RefreshTokens");
             entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).HasDefaultValueSql("NEWID()");
+            entity.Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
             entity.Property(x => x.Token).HasMaxLength(500).IsRequired();
-            entity.Property(x => x.ExpiresAt).HasColumnType("datetime");
+            entity.Property(x => x.ExpiresAt).HasColumnType("timestamp with time zone");
             entity.Property(x => x.IsRevoked).HasDefaultValue(false);
-            entity.Property(x => x.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(x => x.CreatedAt).HasColumnType("timestamp with time zone").HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.HasOne(x => x.User)
                 .WithMany(x => x.RefreshTokens)
@@ -62,11 +62,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             entity.ToTable("Comments");
             entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).HasDefaultValueSql("NEWID()");
-            entity.Property(x => x.Content).HasColumnType("nvarchar(max)").IsRequired();
+            entity.Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(x => x.Content).HasColumnType("text").IsRequired();
             entity.Property(x => x.IsDeleted).HasDefaultValue(false);
-            entity.Property(x => x.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(x => x.UpdatedAt).HasColumnType("datetime");
+            entity.Property(x => x.CreatedAt).HasColumnType("timestamp with time zone").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(x => x.UpdatedAt).HasColumnType("timestamp with time zone");
 
             entity.HasOne(x => x.User)
                 .WithMany(x => x.Comments)
@@ -87,13 +87,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             entity.ToTable("ActivityLogs");
             entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).HasDefaultValueSql("NEWID()");
+            entity.Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
             entity.Property(x => x.Action)
                 .HasConversion(action => ToDatabaseValue(action), value => ToActivityAction(value))
                 .HasMaxLength(50)
                 .IsRequired();
-            entity.Property(x => x.Detail).HasColumnType("nvarchar(max)");
-            entity.Property(x => x.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(x => x.Detail).HasColumnType("text");
+            entity.Property(x => x.CreatedAt).HasColumnType("timestamp with time zone").HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.HasOne(x => x.User)
                 .WithMany(x => x.ActivityLogs)
@@ -109,7 +109,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             entity.ToTable("Notifications");
             entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).HasDefaultValueSql("NEWID()");
+            entity.Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
             entity.Property(x => x.Type)
                 .HasConversion(type => ToDatabaseValue(type), value => ToNotificationType(value))
                 .HasMaxLength(50)
@@ -117,7 +117,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(x => x.Message).HasMaxLength(500).IsRequired();
             entity.Property(x => x.ReferenceType).HasConversion<string>().HasMaxLength(20).IsRequired();
             entity.Property(x => x.IsRead).HasDefaultValue(false);
-            entity.Property(x => x.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(x => x.CreatedAt).HasColumnType("timestamp with time zone").HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.HasOne(x => x.User)
                 .WithMany(x => x.Notifications)
