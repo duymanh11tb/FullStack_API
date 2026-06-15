@@ -35,7 +35,7 @@ services:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: "manhduy11@"
     ports:
-      - "1433:1433"
+      - "14333:1433"
     restart: always
     networks:
       - app-network
