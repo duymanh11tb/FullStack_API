@@ -1,0 +1,504 @@
+<template>
+  <header class="app-header">
+    <div class="header-left">
+      <button class="sidebar-toggle" @click="$emit('toggle-sidebar')" id="btn-toggle-sidebar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      </button>
+      <div class="breadcrumb">
+        <span class="breadcrumb-item">{{ currentPageTitle }}</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <!-- Theme Toggle -->
+      <button class="icon-btn theme-toggle" @click="toggleTheme" title="Chuyển đổi giao diện">
+        <svg v-if="isDarkTheme" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Notification Bell -->
+      <div class="notification-wrapper" ref="notifRef">
+        <button class="icon-btn" @click="toggleNotifDropdown" id="btn-notifications">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
+        </button>
+
+        <transition name="fade">
+          <div v-if="showNotifDropdown" class="notif-dropdown">
+            <div class="notif-dropdown-header">
+              <h4>Thông báo</h4>
+              <button v-if="unreadCount > 0" class="link-btn" @click="handleMarkAllRead">
+                Đọc tất cả
+              </button>
+            </div>
+            <div class="notif-dropdown-body">
+              <div v-if="notifications.length === 0" class="notif-empty">
+                Không có thông báo
+              </div>
+              <div
+                v-for="notif in notifications.slice(0, 5)"
+                :key="notif.id"
+                class="notif-item"
+                :class="{ unread: !notif.isRead }"
+                @click="handleNotifClick(notif)"
+              >
+                <div class="notif-dot" v-if="!notif.isRead"></div>
+                <div class="notif-content">
+                  <p class="notif-message">{{ notif.message || notif.detail || 'Thông báo mới' }}</p>
+                  <span class="notif-time">{{ formatTime(notif.createdAt) }}</span>
+                </div>
+              </div>
+            </div>
+            <router-link to="/notifications" class="notif-dropdown-footer" @click="showNotifDropdown = false">
+              Xem tất cả thông báo
+            </router-link>
+          </div>
+        </transition>
+      </div>
+
+      <!-- User Menu -->
+      <div class="user-menu" ref="userRef">
+        <button class="user-btn" @click="toggleUserMenu" id="btn-user-menu">
+          <div class="user-avatar">
+            {{ userInitial }}
+          </div>
+          <span class="user-name">{{ displayName }}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+
+        <transition name="fade">
+          <div v-if="showUserMenu" class="dropdown-menu">
+            <router-link to="/settings" class="dropdown-item" @click="showUserMenu = false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+              </svg>
+              Cài đặt
+            </router-link>
+            <button class="dropdown-item danger" @click="handleLogout">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              Đăng xuất
+            </button>
+          </div>
+        </transition>
+      </div>
+    </div>
+  </header>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '../../stores/auth'
+import { useNotificationStore } from '../../stores/notifications'
+
+defineEmits(['toggle-sidebar'])
+
+const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
+const notifStore = useNotificationStore()
+
+const showNotifDropdown = ref(false)
+const showUserMenu = ref(false)
+const notifRef = ref(null)
+const userRef = ref(null)
+
+const isDarkTheme = ref(false)
+
+const displayName = computed(() => authStore.displayName)
+const userInitial = computed(() => displayName.value.charAt(0).toUpperCase())
+const unreadCount = computed(() => notifStore.unreadCount)
+const notifications = computed(() => notifStore.notifications)
+
+const pageTitles = {
+  Dashboard: 'Tổng quan',
+  Projects: 'Dự án',
+  ProjectDetail: 'Chi tiết dự án',
+  Notifications: 'Thông báo',
+  Settings: 'Cài đặt'
+}
+
+const currentPageTitle = computed(() => pageTitles[route.name] || '')
+
+function toggleNotifDropdown() {
+  showNotifDropdown.value = !showNotifDropdown.value
+  showUserMenu.value = false
+}
+
+function toggleUserMenu() {
+  showUserMenu.value = !showUserMenu.value
+  showNotifDropdown.value = false
+}
+
+function handleNotifClick(notif) {
+  if (!notif.isRead) {
+    notifStore.markAsRead(notif.id)
+  }
+  showNotifDropdown.value = false
+}
+
+function handleMarkAllRead() {
+  notifStore.markAllAsRead()
+}
+
+function handleLogout() {
+  authStore.logout()
+  router.push('/login')
+}
+
+function toggleTheme() {
+  isDarkTheme.value = !isDarkTheme.value
+  if (isDarkTheme.value) {
+    document.documentElement.setAttribute('data-theme', 'dark')
+    localStorage.setItem('theme', 'dark')
+  } else {
+    document.documentElement.removeAttribute('data-theme')
+    localStorage.setItem('theme', 'light')
+  }
+}
+
+function formatTime(dateStr) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = now - date
+  const minutes = Math.floor(diff / 60000)
+  if (minutes < 1) return 'Vừa xong'
+  if (minutes < 60) return `${minutes} phút trước`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours} giờ trước`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days} ngày trước`
+  return date.toLocaleDateString('vi-VN')
+}
+
+function handleClickOutside(e) {
+  if (notifRef.value && !notifRef.value.contains(e.target)) {
+    showNotifDropdown.value = false
+  }
+  if (userRef.value && !userRef.value.contains(e.target)) {
+    showUserMenu.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+  notifStore.loadNotifications()
+  
+  // Initialize Theme
+  const savedTheme = localStorage.getItem('theme')
+  if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    isDarkTheme.value = true
+    document.documentElement.setAttribute('data-theme', 'dark')
+  }
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+</script>
+
+<style scoped>
+.app-header {
+  height: var(--header-height);
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-6);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.sidebar-toggle {
+  display: none;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.sidebar-toggle:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 768px) {
+  .sidebar-toggle {
+    display: flex;
+  }
+}
+
+.breadcrumb-item {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.icon-btn {
+  position: relative;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.icon-btn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.notif-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  background: var(--color-danger);
+  color: white;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.notification-wrapper, .user-menu {
+  position: relative;
+}
+
+.notif-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 380px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  z-index: var(--z-dropdown);
+}
+
+.notif-dropdown-header {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notif-dropdown-header h4 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.link-btn {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+  transition: color var(--transition-fast);
+}
+
+.link-btn:hover {
+  color: var(--color-primary-hover);
+}
+
+.notif-dropdown-body {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.notif-empty {
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  border-bottom: 1px solid var(--color-bg-secondary);
+}
+
+.notif-item:hover {
+  background: var(--color-bg);
+}
+
+.notif-item.unread {
+  background: var(--color-primary-subtle);
+}
+
+.notif-item.unread:hover {
+  background: var(--color-primary-light);
+}
+
+.notif-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.notif-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notif-message {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.notif-time {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
+  display: block;
+}
+
+.notif-dropdown-footer {
+  display: block;
+  padding: var(--space-3) var(--space-4);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  border-top: 1px solid var(--color-border);
+  transition: background var(--transition-fast);
+}
+
+.notif-dropdown-footer:hover {
+  background: var(--color-bg);
+}
+
+/* User button */
+.user-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.user-btn:hover {
+  background: var(--color-bg-secondary);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+}
+
+.user-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 768px) {
+  .user-name { display: none; }
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 200px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-1);
+  z-index: var(--z-dropdown);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.dropdown-item:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.dropdown-item.danger:hover {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+}
+</style>
