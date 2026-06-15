@@ -313,7 +313,6 @@ import BaseModal from '../components/common/BaseModal.vue'
 import BaseInput from '../components/common/BaseInput.vue'
 import LoadingSpinner from '../components/common/LoadingSpinner.vue'
 import EmptyState from '../components/common/EmptyState.vue'
-import SprintList from '../components/project/SprintList.vue'
 
 const route = useRoute()
 const router = useRouter()
