@@ -138,7 +138,7 @@
         <div v-if="activeTab === 'sprints'" class="tab-panel">
           <div class="panel-header">
             <h3>Sprints ({{ sprints.length }})</h3>
-            <BaseButton variant="primary" size="sm" @click="showSprintModal = true; sprintForm = { name: '', goal: '', startDate: '', endDate: '' }; editingSprintId = null">
+            <BaseButton variant="primary" size="sm" @click="showSprintModal = true; Object.assign(sprintForm, { name: '', goal: '', startDate: '', endDate: '' }); editingSprintId = null">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
               </svg>
@@ -185,7 +185,7 @@
         <div v-if="activeTab === 'milestones'" class="tab-panel">
           <div class="panel-header">
             <h3>Milestones ({{ milestones.length }})</h3>
-            <BaseButton variant="primary" size="sm" @click="showMilestoneModal = true; milestoneForm = { title: '', description: '', dueDate: '' }; editingMilestoneId = null">
+            <BaseButton variant="primary" size="sm" @click="showMilestoneModal = true; Object.assign(milestoneForm, { title: '', description: '', dueDate: '' }); editingMilestoneId = null">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
               </svg>
