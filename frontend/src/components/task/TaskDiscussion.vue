@@ -1,5 +1,5 @@
 <template>
-  <div class="project-discussion">
+  <div class="task-discussion">
     <!-- Comment List -->
     <div class="comment-list" ref="commentListRef">
       <LoadingSpinner v-if="loading" text="Đang tải bình luận..." />
@@ -170,10 +170,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.project-discussion {
+.task-discussion {
   display: flex;
   flex-direction: column;
-  height: 500px;
+  height: 100%;
+  min-height: 400px;
+  max-height: 600px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-bg);

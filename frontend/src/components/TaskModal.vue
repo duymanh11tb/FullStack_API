@@ -1,72 +1,82 @@
 <template>
   <div v-if="isOpen" class="modal-overlay" @click.self="closeModal">
-    <div class="modal-content glass-panel">
+    <div class="modal-content glass-panel" :class="{ 'modal-large': isEdit }">
       <div class="modal-header">
-        <h2>{{ isEdit ? 'Edit Task' : 'Create New Task' }}</h2>
+        <h2>{{ isEdit ? 'Task Details' : 'Create New Task' }}</h2>
         <button class="close-btn" @click="closeModal">&times;</button>
       </div>
       
-      <form @submit.prevent="submitForm" class="task-form">
-        <div class="form-group">
-          <label for="title">Title</label>
-          <input id="title" v-model="formData.title" type="text" required placeholder="Task title..." />
-        </div>
-        
-        <div class="form-group">
-          <label for="description">Description</label>
-          <textarea id="description" v-model="formData.description" rows="3" placeholder="Add some details..."></textarea>
-        </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label for="priority">Priority</label>
-            <select id="priority" v-model="formData.priority">
-              <option :value="0">Low</option>
-              <option :value="1">Medium</option>
-              <option :value="2">High</option>
-              <option :value="3">Urgent</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label for="status">Status</label>
-            <select id="status" v-model="formData.currentStatus">
-              <option :value="0">To Do</option>
-              <option :value="1">In Progress</option>
-              <option :value="2">Review</option>
-              <option :value="3">Done</option>
-            </select>
-          </div>
+      <div class="modal-body" :class="{ 'with-discussion': isEdit }">
+        <div class="task-form-container">
+          <form @submit.prevent="submitForm" class="task-form">
+            <div class="form-group">
+              <label for="title">Title</label>
+              <input id="title" v-model="formData.title" type="text" required placeholder="Task title..." />
+            </div>
+            
+            <div class="form-group">
+              <label for="description">Description</label>
+              <textarea id="description" v-model="formData.description" rows="3" placeholder="Add some details..."></textarea>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="priority">Priority</label>
+                <select id="priority" v-model="formData.priority">
+                  <option :value="0">Low</option>
+                  <option :value="1">Medium</option>
+                  <option :value="2">High</option>
+                  <option :value="3">Urgent</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status" v-model="formData.currentStatus">
+                  <option :value="0">To Do</option>
+                  <option :value="1">In Progress</option>
+                  <option :value="2">Review</option>
+                  <option :value="3">Done</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="deadline">Deadline</label>
+                <input id="deadline" v-model="formData.deadline" type="datetime-local" />
+              </div>
+              
+              <div class="form-group">
+                <label for="colorLabel">Color Label</label>
+                <input id="colorLabel" v-model="formData.colorLabel" type="color" />
+              </div>
+            </div>
+            
+            <div class="modal-actions">
+              <button type="button" class="btn-cancel" @click="closeModal">Cancel</button>
+              <button type="submit" class="btn-submit" :disabled="loading">
+                {{ loading ? 'Saving...' : 'Save Task' }}
+              </button>
+              <button v-if="isEdit" type="button" class="btn-delete" @click="deleteTask" :disabled="loading">
+                Delete
+              </button>
+            </div>
+          </form>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="deadline">Deadline</label>
-            <input id="deadline" v-model="formData.deadline" type="datetime-local" />
-          </div>
-          
-          <div class="form-group">
-            <label for="colorLabel">Color Label</label>
-            <input id="colorLabel" v-model="formData.colorLabel" type="color" />
-          </div>
+        <div v-if="isEdit" class="task-discussion-container">
+          <h3 class="discussion-title">Discussion</h3>
+          <TaskDiscussion :task-id="formData.taskId" />
         </div>
-        
-        <div class="modal-actions">
-          <button type="button" class="btn-cancel" @click="closeModal">Cancel</button>
-          <button type="submit" class="btn-submit" :disabled="loading">
-            {{ loading ? 'Saving...' : 'Save Task' }}
-          </button>
-          <button v-if="isEdit" type="button" class="btn-delete" @click="deleteTask" :disabled="loading">
-            Delete
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, watch, defineProps, defineEmits } from 'vue';
+import TaskDiscussion from './task/TaskDiscussion.vue';
 
 const props = defineProps({
   isOpen: Boolean,
@@ -166,6 +176,34 @@ const deleteTask = () => {
   background: var(--bg-secondary);
   padding: 24px;
   animation: slideUp 0.3s ease;
+  transition: max-width 0.3s ease;
+}
+
+.modal-large {
+  max-width: 900px;
+}
+
+.modal-body.with-discussion {
+  display: flex;
+  gap: 24px;
+}
+
+.task-form-container {
+  flex: 1;
+}
+
+.task-discussion-container {
+  flex: 1;
+  border-left: 1px solid var(--border-color);
+  padding-left: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.discussion-title {
+  font-size: 1.1rem;
+  margin-bottom: 16px;
+  color: var(--text-primary);
 }
 
 @keyframes slideUp {
