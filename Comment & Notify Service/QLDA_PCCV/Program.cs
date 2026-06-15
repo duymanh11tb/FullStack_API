@@ -30,6 +30,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddHttpClient("ProjectApi", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiUrls:ProjectApi"] ?? "http://103.178.235.78:5001");
+});
+builder.Services.AddHttpClient("TaskApi", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiUrls:TaskApi"] ?? "http://103.178.235.78:5002");
+});
+
 builder.Services.AddControllers();
 builder.Services.AddScoped<INotificationEventService, NotificationEventService>();
 builder.Services.AddEndpointsApiExplorer();

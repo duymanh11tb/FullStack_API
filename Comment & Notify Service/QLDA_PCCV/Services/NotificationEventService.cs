@@ -14,10 +14,12 @@ public interface INotificationEventService
 public class NotificationEventService : INotificationEventService
 {
     private readonly AppDbContext _context;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public NotificationEventService(AppDbContext context)
+    public NotificationEventService(AppDbContext context, IHttpClientFactory httpClientFactory)
     {
         _context = context;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<NotificationEventResult> ConsumeAsync(NotificationEventRequest request, CancellationToken cancellationToken = default)
@@ -117,10 +119,30 @@ public class NotificationEventService : INotificationEventService
 
         if (notificationType == NotificationType.SprintStarted && recipientIds.Count == 0 && request.ProjectId.HasValue)
         {
-            recipientIds = await _context.ProjectMembers
-                .Where(m => m.ProjectId == request.ProjectId.Value)
-                .Select(m => m.UserId)
-                .ToHashSetAsync(cancellationToken);
+            try
+            {
+                var client = _httpClientFactory.CreateClient("ProjectApi");
+                var response = await client.GetAsync($"/api/projects/{request.ProjectId.Value}/members", cancellationToken);
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                    using var doc = System.Text.Json.JsonDocument.Parse(content);
+                    if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        foreach (var item in doc.RootElement.EnumerateArray())
+                        {
+                            if (item.TryGetProperty("userId", out var uid) || item.TryGetProperty("UserId", out uid))
+                            {
+                                if (uid.TryGetGuid(out var parsedUid) || Guid.TryParse(uid.GetString(), out parsedUid))
+                                {
+                                    recipientIds.Add(parsedUid);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch { /* Ignore errors and return empty list */ }
         }
 
         if (recipientIds.Count == 0)
@@ -273,26 +295,62 @@ public class NotificationEventService : INotificationEventService
 
     private async Task<string> GetTaskTitleAsync(Guid taskId, CancellationToken cancellationToken)
     {
-        return await _context.Tasks
-            .Where(t => t.Id == taskId)
-            .Select(t => t.Title)
-            .FirstOrDefaultAsync(cancellationToken) ?? taskId.ToString();
+        try
+        {
+            var client = _httpClientFactory.CreateClient("TaskApi");
+            var response = await client.GetAsync($"/api/tasks/{taskId}", cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var doc = System.Text.Json.JsonDocument.Parse(content);
+                if (doc.RootElement.TryGetProperty("title", out var titleProp) && titleProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                    return titleProp.GetString() ?? taskId.ToString();
+                if (doc.RootElement.TryGetProperty("Title", out var titleProp2) && titleProp2.ValueKind == System.Text.Json.JsonValueKind.String)
+                    return titleProp2.GetString() ?? taskId.ToString();
+            }
+        }
+        catch { /* Fallback */ }
+        return taskId.ToString();
     }
 
     private async Task<string> GetProjectNameAsync(Guid projectId, CancellationToken cancellationToken)
     {
-        return await _context.Projects
-            .Where(p => p.Id == projectId)
-            .Select(p => p.Name)
-            .FirstOrDefaultAsync(cancellationToken) ?? projectId.ToString();
+        try
+        {
+            var client = _httpClientFactory.CreateClient("ProjectApi");
+            var response = await client.GetAsync($"/api/projects/{projectId}", cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var doc = System.Text.Json.JsonDocument.Parse(content);
+                if (doc.RootElement.TryGetProperty("name", out var nameProp) && nameProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                    return nameProp.GetString() ?? projectId.ToString();
+                if (doc.RootElement.TryGetProperty("Name", out var nameProp2) && nameProp2.ValueKind == System.Text.Json.JsonValueKind.String)
+                    return nameProp2.GetString() ?? projectId.ToString();
+            }
+        }
+        catch { /* Fallback */ }
+        return projectId.ToString();
     }
 
     private async Task<string> GetSprintNameAsync(Guid sprintId, CancellationToken cancellationToken)
     {
-        return await _context.Sprints
-            .Where(s => s.Id == sprintId)
-            .Select(s => s.Name)
-            .FirstOrDefaultAsync(cancellationToken) ?? sprintId.ToString();
+        try
+        {
+            var client = _httpClientFactory.CreateClient("ProjectApi");
+            var response = await client.GetAsync($"/api/sprints/{sprintId}", cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var doc = System.Text.Json.JsonDocument.Parse(content);
+                if (doc.RootElement.TryGetProperty("name", out var nameProp) && nameProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                    return nameProp.GetString() ?? sprintId.ToString();
+                if (doc.RootElement.TryGetProperty("Name", out var nameProp2) && nameProp2.ValueKind == System.Text.Json.JsonValueKind.String)
+                    return nameProp2.GetString() ?? sprintId.ToString();
+            }
+        }
+        catch { /* Fallback */ }
+        return sprintId.ToString();
     }
 }
 

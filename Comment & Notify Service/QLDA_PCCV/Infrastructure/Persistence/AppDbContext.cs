@@ -1,23 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using QLDA_PCCV.Domain.Notifications.Entities;
 using QLDA_PCCV.Domain.Notifications.Enums;
-using QLDA_PCCV.Domain.ProjectManagement.Entities;
-using QLDA_PCCV.Domain.TaskManagement.Entities;
 
 namespace QLDA_PCCV.Infrastructure.Persistence;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    public DbSet<Project> Projects => Set<Project>();
-    public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
-    public DbSet<Sprint> Sprints => Set<Sprint>();
-    public DbSet<Milestone> Milestones => Set<Milestone>();
-
-    public DbSet<TaskItem> Tasks => Set<TaskItem>();
-    public DbSet<SubTask> SubTasks => Set<SubTask>();
-    public DbSet<TimeLog> TimeLogs => Set<TimeLog>();
-    public DbSet<TaskLabel> TaskLabels => Set<TaskLabel>();
-
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Comment> Comments => Set<Comment>();
@@ -27,159 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        ConfigureProjectManagement(modelBuilder);
-        ConfigureTaskManagement(modelBuilder);
         ConfigureNotifications(modelBuilder);
-    }
-
-    private static void ConfigureProjectManagement(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<Project>(entity =>
-        {
-            entity.ToTable("Projects");
-            entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).HasDefaultValueSql("NEWID()");
-            entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
-            entity.Property(x => x.Description).HasColumnType("nvarchar(max)");
-            entity.Property(x => x.Color).HasMaxLength(7).IsRequired();
-            entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
-            entity.Property(x => x.StartDate).HasColumnType("date");
-            entity.Property(x => x.EndDate).HasColumnType("date");
-            entity.Property(x => x.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(x => x.UpdatedAt).HasColumnType("datetime");
-
-            entity.HasIndex(x => x.OwnerId);
-            entity.HasIndex(x => x.Status);
-        });
-
-        modelBuilder.Entity<ProjectMember>(entity =>
-        {
-            entity.ToTable("ProjectMembers");
-            entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).HasDefaultValueSql("NEWID()");
-            entity.Property(x => x.Role).HasConversion<string>().HasMaxLength(20).IsRequired();
-            entity.Property(x => x.JoinedAt).HasColumnType("datetime").HasDefaultValueSql("GETUTCDATE()");
-
-            entity.HasOne(x => x.Project)
-                .WithMany(x => x.Members)
-                .HasForeignKey(x => x.ProjectId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasIndex(x => new { x.ProjectId, x.UserId }).IsUnique();
-            entity.HasIndex(x => x.UserId);
-        });
-
-        modelBuilder.Entity<Sprint>(entity =>
-        {
-            entity.ToTable("Sprints");
-            entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).HasDefaultValueSql("NEWID()");
-            entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
-            entity.Property(x => x.Goal).HasColumnType("nvarchar(max)");
-            entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
-            entity.Property(x => x.StartDate).HasColumnType("date");
-            entity.Property(x => x.EndDate).HasColumnType("date");
-            entity.Property(x => x.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("GETUTCDATE()");
-
-            entity.HasOne(x => x.Project)
-                .WithMany(x => x.Sprints)
-                .HasForeignKey(x => x.ProjectId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasIndex(x => new { x.ProjectId, x.Status });
-        });
-
-        modelBuilder.Entity<Milestone>(entity =>
-        {
-            entity.ToTable("Milestones");
-            entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).HasDefaultValueSql("NEWID()");
-            entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
-            entity.Property(x => x.DueDate).HasColumnType("date");
-            entity.Property(x => x.IsCompleted).HasDefaultValue(false);
-            entity.Property(x => x.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("GETUTCDATE()");
-
-            entity.HasOne(x => x.Project)
-                .WithMany(x => x.Milestones)
-                .HasForeignKey(x => x.ProjectId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasIndex(x => new { x.ProjectId, x.DueDate });
-        });
-    }
-
-    private static void ConfigureTaskManagement(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<TaskItem>(entity =>
-        {
-            entity.ToTable("Tasks");
-            entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).HasDefaultValueSql("NEWID()");
-            entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
-            entity.Property(x => x.Description).HasColumnType("nvarchar(max)");
-            entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
-            entity.Property(x => x.Priority).HasConversion<string>().HasMaxLength(10).IsRequired();
-            entity.Property(x => x.Deadline).HasColumnType("date");
-            entity.Property(x => x.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(x => x.UpdatedAt).HasColumnType("datetime");
-
-            entity.HasIndex(x => new { x.ProjectId, x.Status });
-            entity.HasIndex(x => x.SprintId);
-            entity.HasIndex(x => x.AssigneeId);
-            entity.HasIndex(x => x.ReporterId);
-        });
-
-        modelBuilder.Entity<SubTask>(entity =>
-        {
-            entity.ToTable("SubTasks");
-            entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).HasDefaultValueSql("NEWID()");
-            entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
-            entity.Property(x => x.IsCompleted).HasDefaultValue(false);
-            entity.Property(x => x.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("GETUTCDATE()");
-
-            entity.HasOne(x => x.Task)
-                .WithMany(x => x.SubTasks)
-                .HasForeignKey(x => x.TaskId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasIndex(x => x.AssigneeId);
-        });
-
-        modelBuilder.Entity<TimeLog>(entity =>
-        {
-            entity.ToTable("TimeLogs");
-            entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).HasDefaultValueSql("NEWID()");
-            entity.Property(x => x.LoggedHours).HasColumnType("decimal(5,2)").IsRequired();
-            entity.Property(x => x.LogDate).HasColumnType("date");
-            entity.Property(x => x.Note).HasMaxLength(500);
-            entity.Property(x => x.CreatedAt).HasColumnType("datetime").HasDefaultValueSql("GETUTCDATE()");
-
-            entity.HasOne(x => x.Task)
-                .WithMany(x => x.TimeLogs)
-                .HasForeignKey(x => x.TaskId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasIndex(x => new { x.TaskId, x.LogDate });
-            entity.HasIndex(x => x.UserId);
-        });
-
-        modelBuilder.Entity<TaskLabel>(entity =>
-        {
-            entity.ToTable("TaskLabels");
-            entity.HasKey(x => x.Id);
-            entity.Property(x => x.Id).HasDefaultValueSql("NEWID()");
-            entity.Property(x => x.LabelName).HasMaxLength(50).IsRequired();
-            entity.Property(x => x.Color).HasMaxLength(7).IsRequired();
-
-            entity.HasOne(x => x.Task)
-                .WithMany(x => x.Labels)
-                .HasForeignKey(x => x.TaskId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasIndex(x => new { x.TaskId, x.LabelName }).IsUnique();
-        });
     }
 
     private static void ConfigureNotifications(ModelBuilder modelBuilder)
