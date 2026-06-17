@@ -9,9 +9,7 @@ services:
       - "5003:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultDb=Host=postgres;Database=QLDA_PCCV;Username=postgres;Password=manhduy11@
-    depends_on:
-      - postgres
+      - ConnectionStrings__DefaultDb=Host=103.178.235.78;Port=5432;Database=QLDA_PCCV;Username=haiquan;Password=haiquan123456;
     restart: always
     networks:
       - app-network
@@ -28,23 +26,6 @@ services:
     networks:
       - app-network
 
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: manhduy11@
-      POSTGRES_DB: QLDA_PCCV
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: always
-    networks:
-      - app-network
-
 networks:
   app-network:
     driver: bridge
-
-volumes:
-  postgres_data:
