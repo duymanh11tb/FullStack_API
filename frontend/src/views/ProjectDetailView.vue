@@ -105,7 +105,7 @@
                   <td class="text-secondary">{{ member.email || '—' }}</td>
                   <td>
                     <select
-                      :value="member.role"
+                      :value="getRoleValue(member.role)"
                       @change="handleUpdateRole(member.id, $event.target.value)"
                       class="role-select"
                     >
@@ -361,6 +361,14 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+function getRoleValue(role) {
+  if (role === 'Owner') return '0'
+  if (role === 'Manager' || role === 'Admin') return '1'
+  if (role === 'Member') return '2'
+  if (role === 'Viewer') return '3'
+  return role != null ? role.toString() : '2'
+}
+
 function isDueSoon(dateStr) {
   if (!dateStr) return false
   const due = new Date(dateStr)
@@ -455,8 +463,15 @@ async function handleAddMember() {
 
 async function handleUpdateRole(memberId, role) {
   try {
-    const roleNum = parseInt(role) || 0
+    const roleNum = parseInt(role)
     await updateMemberRole(projectId.value, memberId, { role: roleNum })
+    
+    // Cập nhật role của member trong mảng state local để UI thay đổi ngay lập tức
+    const roleNames = ['Owner', 'Manager', 'Member', 'Viewer']
+    const member = members.value.find(m => m.id === memberId)
+    if (member) {
+      member.role = roleNames[roleNum]
+    }
   } catch (err) {
     alert(err.response?.data?.message || 'Không thể cập nhật vai trò')
   }

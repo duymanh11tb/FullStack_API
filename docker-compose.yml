@@ -36,6 +36,8 @@ services:
       POSTGRES_DB: QLDA_PCCV
     ports:
       - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     restart: always
     networks:
       - app-network
@@ -43,3 +45,6 @@ services:
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  postgres_data:
