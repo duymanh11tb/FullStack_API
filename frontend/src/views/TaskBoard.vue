@@ -57,11 +57,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useTaskStore } from '../stores/taskStore';
 import TaskCard from '../components/TaskCard.vue';
 import TaskModal from '../components/TaskModal.vue';
 
+const route = useRoute();
+const router = useRouter();
 const taskStore = useTaskStore();
 
 // Status Mapping based on Swagger enum
@@ -73,9 +76,28 @@ const columns = [
   { status: 3, title: 'Done', color: 'var(--status-done)' }
 ];
 
+const checkRouteTaskId = () => {
+  const taskId = route.query.taskId;
+  if (taskId) {
+    const task = taskStore.tasks.find(t => t.taskId === taskId || t.id === taskId);
+    if (task) {
+      openEditModal(task);
+    }
+  }
+};
+
 onMounted(async () => {
   await taskStore.fetchTasks();
+  checkRouteTaskId();
 });
+
+watch(() => route.query.taskId, () => {
+  checkRouteTaskId();
+});
+
+watch(() => taskStore.tasks, () => {
+  checkRouteTaskId();
+}, { deep: true });
 
 const getTasksByStatus = (status) => {
   return taskStore.tasks.filter(t => t.currentStatus === status) || [];
@@ -122,6 +144,9 @@ const openEditModal = (task) => {
 const closeModal = () => {
   isModalOpen.value = false;
   editingTask.value = null;
+  if (route.query.taskId) {
+    router.replace({ query: { ...route.query, taskId: undefined } });
+  }
 };
 
 const onSaveTask = async (taskData) => {

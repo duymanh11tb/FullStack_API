@@ -161,6 +161,19 @@ function handleNotifClick(notif) {
     notifStore.markAsRead(notif.id)
   }
   showNotifDropdown.value = false
+
+  const type = notif.type
+  const typeName = notif.typeName
+  const refId = notif.referenceId
+
+  const isTaskRelated = [1, 2, 3, 6, 7].includes(type) || ['TaskAssigned', 'TaskStatusChanged', 'CommentMention', 'TaskDeadlineApproaching', 'CommentAdded'].includes(typeName)
+  const isProjectRelated = [5].includes(type) || ['MemberAdded'].includes(typeName)
+
+  if (isTaskRelated && refId) {
+    router.push({ path: '/tasks', query: { taskId: refId } })
+  } else if (isProjectRelated && refId) {
+    router.push(`/projects/${refId}`)
+  }
 }
 
 function handleMarkAllRead() {

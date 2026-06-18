@@ -64,12 +64,33 @@
 
     <!-- Input Box -->
     <div class="comment-input-area">
+      <!-- Mentions Dropdown -->
+      <div v-if="showMentionsDropdown && filteredMembers.length > 0" class="mentions-dropdown">
+        <div
+          v-for="(member, index) in filteredMembers"
+          :key="member.userId || member.email"
+          :class="['mention-item', { active: index === mentionSelectedIndex }]"
+          @click="selectMention(member)"
+        >
+          <div class="mention-avatar" :style="{ background: getAvatarColor(member.displayName) }">
+            {{ member.displayName.charAt(0).toUpperCase() }}
+          </div>
+          <div class="mention-info">
+            <span class="mention-name">{{ member.displayName }}</span>
+            <span class="mention-username">@{{ getMemberUsername(member) }}</span>
+          </div>
+        </div>
+      </div>
+
       <textarea
         v-model="newComment"
         placeholder="Viết bình luận..."
         rows="3"
         class="comment-input"
-        @keydown.enter.exact.prevent="submitComment"
+        @keydown="handleKeyDown"
+        @input="handleInput"
+        @click="showMentionsDropdown = false"
+        ref="textareaRef"
       ></textarea>
       <div class="input-actions">
         <span class="help-text">Nhấn Enter để gửi, Shift + Enter để xuống dòng</span>
@@ -86,8 +107,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
 import { getCommentsByTask, createComment, deleteComment } from '../../api/notifyApi'
+import { taskApi } from '../../api/taskApi'
+import { getMembers } from '../../api/projectApi'
 import { useAuthStore } from '../../stores/auth'
 import LoadingSpinner from '../common/LoadingSpinner.vue'
 import BaseButton from '../common/BaseButton.vue'
@@ -105,6 +128,147 @@ const submitting = ref(false)
 const comments = ref([])
 const newComment = ref('')
 const commentListRef = ref(null)
+
+// Mentions Autocomplete State
+const textareaRef = ref(null)
+const showMentionsDropdown = ref(false)
+const mentionSearchQuery = ref('')
+const mentionSelectedIndex = ref(0)
+const mentionTriggerIndex = ref(-1)
+const members = ref([])
+
+const defaultSeedUsers = [
+  { displayName: 'admin', email: 'admin@example.com', userId: 'seed-admin' },
+  { displayName: 'duymanh', email: 'duymanh@example.com', userId: 'seed-duymanh' },
+  { displayName: 'tranailinh', email: 'tranailinh@example.com', userId: 'seed-tranailinh' }
+]
+
+const avatarColors = ['#2563EB', '#7C3AED', '#DC2626', '#D97706', '#16A34A', '#0891B2', '#DB2777', '#4F46E5']
+
+function getAvatarColor(name) {
+  if (!name) return avatarColors[0]
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return avatarColors[Math.abs(hash) % avatarColors.length]
+}
+
+function getMemberUsername(member) {
+  if (member.username) return member.username
+  if (member.email) return member.email.split('@')[0]
+  return member.displayName.toLowerCase().replace(/\s+/g, '')
+}
+
+const filteredMembers = computed(() => {
+  const query = mentionSearchQuery.value.toLowerCase()
+  if (!query) return members.value
+  
+  return members.value.filter(member => {
+    const username = getMemberUsername(member).toLowerCase()
+    const name = member.displayName.toLowerCase()
+    return username.includes(query) || name.includes(query)
+  })
+})
+
+async function fetchProjectMembers() {
+  try {
+    const taskRes = await taskApi.getTask(props.taskId)
+    const taskData = taskRes.data?.data || taskRes.data
+    const boardId = taskData?.boardId || taskData?.boardID || taskData?.projectId
+    
+    if (boardId) {
+      const membersRes = await getMembers(boardId)
+      const projectMembers = membersRes.data?.data || membersRes.data || []
+      
+      const combined = [...projectMembers]
+      defaultSeedUsers.forEach(seed => {
+        if (!combined.some(m => m.email?.toLowerCase() === seed.email.toLowerCase())) {
+          combined.push(seed)
+        }
+      })
+      members.value = combined
+    } else {
+      members.value = defaultSeedUsers
+    }
+  } catch (err) {
+    console.error('Lỗi khi tải thành viên dự án:', err)
+    members.value = defaultSeedUsers
+  }
+}
+
+function handleInput(event) {
+  const textarea = event.target
+  const value = textarea.value
+  const selectionStart = textarea.selectionStart
+
+  const textBeforeCursor = value.slice(0, selectionStart)
+  const lastAtSymbol = textBeforeCursor.lastIndexOf('@')
+
+  if (lastAtSymbol !== -1) {
+    const isFirstCharOrPrecededByWhitespace = lastAtSymbol === 0 || /\s/.test(textBeforeCursor[lastAtSymbol - 1])
+    const searchString = textBeforeCursor.slice(lastAtSymbol + 1)
+    const hasSpaceAfterAt = /\s/.test(searchString)
+    
+    if (isFirstCharOrPrecededByWhitespace && !hasSpaceAfterAt) {
+      showMentionsDropdown.value = true
+      mentionSearchQuery.value = searchString
+      mentionTriggerIndex.value = lastAtSymbol
+      mentionSelectedIndex.value = 0
+      return
+    }
+  }
+  
+  showMentionsDropdown.value = false
+}
+
+function handleKeyDown(event) {
+  if (showMentionsDropdown.value) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      mentionSelectedIndex.value = (mentionSelectedIndex.value + 1) % filteredMembers.value.length
+      return
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      mentionSelectedIndex.value = (mentionSelectedIndex.value - 1 + filteredMembers.value.length) % filteredMembers.value.length
+      return
+    } else if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault()
+      if (filteredMembers.value[mentionSelectedIndex.value]) {
+        selectMention(filteredMembers.value[mentionSelectedIndex.value])
+      }
+      return
+    } else if (event.key === 'Escape') {
+      event.preventDefault()
+      showMentionsDropdown.value = false
+      return
+    }
+  }
+
+  // Handle enter key to submit comment when not using dropdown
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault()
+    submitComment()
+  }
+}
+
+function selectMention(member) {
+  if (!member) return
+  
+  const username = getMemberUsername(member)
+  const textarea = textareaRef.value
+  if (!textarea) return
+  
+  const beforeText = newComment.value.slice(0, mentionTriggerIndex.value)
+  const afterText = newComment.value.slice(textarea.selectionStart)
+  
+  newComment.value = beforeText + '@' + username + ' ' + afterText
+  showMentionsDropdown.value = false
+  
+  nextTick(() => {
+    textarea.focus()
+    const newCursorPos = mentionTriggerIndex.value + username.length + 2
+    textarea.setSelectionRange(newCursorPos, newCursorPos)
+  })
+}
 
 function formatTime(dateStr) {
   if (!dateStr) return ''
@@ -166,6 +330,7 @@ async function handleDelete(id) {
 
 onMounted(() => {
   loadComments()
+  fetchProjectMembers()
 })
 </script>
 
@@ -297,6 +462,7 @@ onMounted(() => {
   padding: var(--space-4);
   background: var(--color-white);
   border-top: 1px solid var(--color-border);
+  position: relative;
 }
 
 .comment-input {
@@ -324,6 +490,72 @@ onMounted(() => {
 
 .help-text {
   font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* Mentions Dropdown Styling */
+.mentions-dropdown {
+  position: absolute;
+  bottom: calc(100% - 4px);
+  left: var(--space-4);
+  width: calc(100% - (var(--space-4) * 2));
+  max-width: 320px;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+}
+
+.mention-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.mention-item:hover, .mention-item.active {
+  background: var(--color-primary-light);
+}
+
+.mention-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.mention-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mention-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mention-username {
+  font-size: 11px;
   color: var(--color-text-tertiary);
 }
 </style>
