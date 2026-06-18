@@ -31,7 +31,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddControllers();
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<INotificationEventService, NotificationEventService>();
+builder.Services.AddScoped<IExternalServiceClient, ExternalServiceClient>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddCors(options =>
 {
@@ -73,6 +75,8 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+app.UseCors("AllowAll");
+
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -89,7 +93,6 @@ app.UseSwaggerUI(options =>
 
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
-app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 

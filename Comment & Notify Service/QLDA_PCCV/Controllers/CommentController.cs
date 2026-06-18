@@ -14,11 +14,13 @@ public class CommentController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly INotificationEventService _notificationEventService;
+    private readonly IExternalServiceClient _externalServiceClient;
 
-    public CommentController(AppDbContext context, INotificationEventService notificationEventService)
+    public CommentController(AppDbContext context, INotificationEventService notificationEventService, IExternalServiceClient externalServiceClient)
     {
         _context = context;
         _notificationEventService = notificationEventService;
+        _externalServiceClient = externalServiceClient;
     }
 
     [Authorize]
@@ -29,6 +31,25 @@ public class CommentController : ControllerBase
         if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
         {
             return Unauthorized();
+        }
+
+        // Validate task exists and retrieve project context
+        var task = await _externalServiceClient.GetTaskAsync(request.TaskId);
+        if (task == null)
+        {
+            return NotFound(new { Message = $"Task with ID {request.TaskId} does not exist in Task Service." });
+        }
+
+        // Verify project membership and role (0: Owner, 1: Manager, 2: Member, 3: Viewer)
+        var role = await _externalServiceClient.GetUserRoleInProjectAsync(task.BoardId, userId);
+        if (role == null)
+        {
+            return Forbid(); // Not a member of the project
+        }
+
+        if (role.Value == 3)
+        {
+            return BadRequest(new { Message = "Viewers are not allowed to add comments." });
         }
 
         if (request.ParentCommentId.HasValue)
@@ -58,12 +79,13 @@ public class CommentController : ControllerBase
 
         _context.Comments.Add(comment);
 
-        // Optional: create activity log
+        // create activity log
         var activityLog = new ActivityLog
         {
             Id = Guid.NewGuid(),
             UserId = userId,
             TaskId = request.TaskId,
+            ProjectId = task.BoardId,
             Action = Domain.Notifications.Enums.ActivityAction.Commented,
             Detail = $"Added a comment on task: {request.Content.Substring(0, Math.Min(request.Content.Length, 50))}",
             CreatedAt = DateTime.UtcNow
@@ -122,6 +144,62 @@ public class CommentController : ControllerBase
     }
 
     [Authorize]
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateComment(Guid id, [FromBody] UpdateCommentRequest request)
+    {
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == id);
+        if (comment == null)
+        {
+            return NotFound(new { Message = "Comment not found." });
+        }
+
+        if (comment.IsDeleted)
+        {
+            return BadRequest(new { Message = "Cannot update a deleted comment." });
+        }
+
+        var task = await _externalServiceClient.GetTaskAsync(comment.TaskId);
+        if (task == null)
+        {
+            return NotFound(new { Message = "Task context not found." });
+        }
+
+        var role = await _externalServiceClient.GetUserRoleInProjectAsync(task.BoardId, userId);
+
+        var userRoleString = User.FindFirst(ClaimTypes.Role)?.Value;
+        var isAdmin = userRoleString == "Admin";
+        var isAuthor = comment.UserId == userId;
+        var isProjectManagerOrOwner = role.HasValue && (role.Value == 0 || role.Value == 1);
+
+        if (!isAuthor && !isAdmin && !isProjectManagerOrOwner)
+        {
+            return Forbid();
+        }
+
+        comment.Content = request.Content;
+        comment.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            comment.Id,
+            comment.TaskId,
+            comment.UserId,
+            comment.Content,
+            comment.ParentCommentId,
+            comment.CreatedAt,
+            comment.UpdatedAt
+        });
+    }
+
+    [Authorize]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteComment(Guid id)
     {
@@ -137,11 +215,20 @@ public class CommentController : ControllerBase
             return NotFound(new { Message = "Comment not found." });
         }
 
-        // Only author or admin can delete comment
+        var task = await _externalServiceClient.GetTaskAsync(comment.TaskId);
+        if (task == null)
+        {
+            return NotFound(new { Message = "Task context not found." });
+        }
+
+        var role = await _externalServiceClient.GetUserRoleInProjectAsync(task.BoardId, userId);
+
         var userRoleString = User.FindFirst(ClaimTypes.Role)?.Value;
         var isAdmin = userRoleString == "Admin";
+        var isAuthor = comment.UserId == userId;
+        var isProjectManagerOrOwner = role.HasValue && (role.Value == 0 || role.Value == 1);
 
-        if (comment.UserId != userId && !isAdmin)
+        if (!isAuthor && !isAdmin && !isProjectManagerOrOwner)
         {
             return Forbid();
         }
@@ -169,6 +256,11 @@ public class CreateCommentRequest
     public Guid TaskId { get; set; }
     public string Content { get; set; } = string.Empty;
     public Guid? ParentCommentId { get; set; }
+}
+
+public class UpdateCommentRequest
+{
+    public string Content { get; set; } = string.Empty;
 }
 
 public class CommentDto
