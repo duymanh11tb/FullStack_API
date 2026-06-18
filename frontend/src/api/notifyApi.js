@@ -20,6 +20,10 @@ export const getCommentsByTask = (taskId) =>
 export const deleteComment = (id) =>
   notifyAPI.delete(`/api/Comment/${id}`)
 
+export const updateComment = (id, data) =>
+  notifyAPI.put(`/api/Comment/${id}`, data)
+
+
 // ── Notifications ──
 export const getNotifications = (isRead = undefined) =>
   notifyAPI.get('/api/Notification', { params: isRead !== undefined ? { isRead } : {} })

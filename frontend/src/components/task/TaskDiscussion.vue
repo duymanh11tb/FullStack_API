@@ -14,19 +14,59 @@
               <span class="comment-author">{{ comment.userFullName }}</span>
               <span class="comment-time">{{ formatTime(comment.createdAt) }}</span>
             </div>
-            <div class="comment-body" :class="{ 'deleted': comment.isDeleted }">
-              {{ comment.content }}
+            
+            <!-- Edit Root Comment -->
+            <div v-if="editingCommentId === comment.id" class="edit-comment-area">
+              <textarea v-model="editingContent" class="comment-input edit-textarea" rows="2"></textarea>
+              <div class="edit-actions">
+                <button class="btn-action-sm save" :disabled="!editingContent.trim()" @click="saveEdit(comment.id)">Lưu</button>
+                <button class="btn-action-sm cancel" @click="cancelEdit">Hủy</button>
+              </div>
             </div>
-            <!-- Delete Button (only if author, but for now just show if we have user id logic) -->
-            <button
-              v-if="!comment.isDeleted && authStore.userId === comment.userId"
-              class="btn-delete"
-              @click="handleDelete(comment.id)"
-            >
-              Xóa
-            </button>
+            <div v-else class="comment-body" :class="{ 'deleted': comment.isDeleted }">
+              {{ comment.content }}
+              <span v-if="comment.updatedAt && !comment.isDeleted" class="edited-flag">(Đã chỉnh sửa)</span>
+            </div>
 
-            <!-- Nested Replies (if backend supports it, we render recursively or just 1 level) -->
+            <!-- Root Comment Actions -->
+            <div v-if="!comment.isDeleted" class="comment-actions">
+              <button 
+                v-if="canManageComment(comment)" 
+                class="btn-action" 
+                @click="startEdit(comment)"
+              >
+                Sửa
+              </button>
+              <button 
+                v-if="canManageComment(comment)" 
+                class="btn-action danger" 
+                @click="handleDelete(comment.id)"
+              >
+                Xóa
+              </button>
+              <button 
+                class="btn-action" 
+                @click="startReply(comment.id)"
+              >
+                Trả lời
+              </button>
+            </div>
+
+            <!-- Reply Input Box -->
+            <div v-if="replyingToId === comment.id" class="reply-input-area">
+              <textarea 
+                v-model="replyContent" 
+                placeholder="Trả lời bình luận..." 
+                class="comment-input reply-textarea" 
+                rows="2"
+              ></textarea>
+              <div class="reply-actions">
+                <button class="btn-action-sm save" :disabled="!replyContent.trim() || submitting" @click="submitReply(comment.id)">Gửi</button>
+                <button class="btn-action-sm cancel" @click="cancelReply">Hủy</button>
+              </div>
+            </div>
+
+            <!-- Nested Replies -->
             <div v-if="comment.replies && comment.replies.length > 0" class="replies">
               <div v-for="reply in comment.replies" :key="reply.id" class="comment-item reply">
                 <div class="comment-avatar avatar-sm">
@@ -37,16 +77,43 @@
                     <span class="comment-author">{{ reply.userFullName }}</span>
                     <span class="comment-time">{{ formatTime(reply.createdAt) }}</span>
                   </div>
-                  <div class="comment-body" :class="{ 'deleted': reply.isDeleted }">
-                    {{ reply.content }}
+                  
+                  <!-- Edit Reply Comment -->
+                  <div v-if="editingCommentId === reply.id" class="edit-comment-area">
+                    <textarea v-model="editingContent" class="comment-input edit-textarea" rows="2"></textarea>
+                    <div class="edit-actions">
+                      <button class="btn-action-sm save" :disabled="!editingContent.trim()" @click="saveEdit(reply.id)">Lưu</button>
+                      <button class="btn-action-sm cancel" @click="cancelEdit">Hủy</button>
+                    </div>
                   </div>
-                  <button
-                    v-if="!reply.isDeleted && authStore.userId === reply.userId"
-                    class="btn-delete"
-                    @click="handleDelete(reply.id)"
-                  >
-                    Xóa
-                  </button>
+                  <div v-else class="comment-body" :class="{ 'deleted': reply.isDeleted }">
+                    {{ reply.content }}
+                    <span v-if="reply.updatedAt && !reply.isDeleted" class="edited-flag">(Đã chỉnh sửa)</span>
+                  </div>
+
+                  <!-- Reply Actions -->
+                  <div v-if="!reply.isDeleted" class="comment-actions">
+                    <button 
+                      v-if="canManageComment(reply)" 
+                      class="btn-action" 
+                      @click="startEdit(reply)"
+                    >
+                      Sửa
+                    </button>
+                    <button 
+                      v-if="canManageComment(reply)" 
+                      class="btn-action danger" 
+                      @click="handleDelete(reply.id)"
+                    >
+                      Xóa
+                    </button>
+                    <button 
+                      class="btn-action" 
+                      @click="startReply(comment.id)"
+                    >
+                      Trả lời
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -108,7 +175,7 @@
 
 <script setup>
 import { ref, onMounted, nextTick, computed } from 'vue'
-import { getCommentsByTask, createComment, deleteComment } from '../../api/notifyApi'
+import { getCommentsByTask, createComment, deleteComment, updateComment } from '../../api/notifyApi'
 import { taskApi } from '../../api/taskApi'
 import { getMembers } from '../../api/projectApi'
 import { useAuthStore } from '../../stores/auth'
@@ -128,6 +195,14 @@ const submitting = ref(false)
 const comments = ref([])
 const newComment = ref('')
 const commentListRef = ref(null)
+
+// Edit Comment state
+const editingCommentId = ref(null)
+const editingContent = ref('')
+
+// Reply state
+const replyingToId = ref(null)
+const replyContent = ref('')
 
 // Mentions Autocomplete State
 const textareaRef = ref(null)
@@ -322,10 +397,87 @@ async function handleDelete(id) {
   if (!confirm('Xóa bình luận này?')) return
   try {
     await deleteComment(id)
+    if (editingCommentId.value === id) cancelEdit()
+    if (replyingToId.value === id) cancelReply()
     await loadComments()
   } catch (err) {
     alert(err.response?.data?.message || 'Không thể xóa bình luận')
   }
+}
+
+// Edit actions
+function startEdit(comment) {
+  editingCommentId.value = comment.id
+  editingContent.value = comment.content
+}
+
+function cancelEdit() {
+  editingCommentId.value = null
+  editingContent.value = ''
+}
+
+async function saveEdit(id) {
+  if (!editingContent.value.trim()) return
+  try {
+    await updateComment(id, { content: editingContent.value.trim() })
+    cancelEdit()
+    await loadComments()
+  } catch (err) {
+    alert(err.response?.data?.message || 'Không thể cập nhật bình luận')
+  }
+}
+
+// Reply actions
+function startReply(parentId) {
+  replyingToId.value = parentId
+  replyContent.value = ''
+}
+
+function cancelReply() {
+  replyingToId.value = null
+  replyContent.value = ''
+}
+
+async function submitReply(parentId) {
+  if (!replyContent.value.trim() || submitting.value) return
+  submitting.value = true
+  try {
+    await createComment({
+      taskId: props.taskId,
+      content: replyContent.value.trim(),
+      parentCommentId: parentId
+    })
+    cancelReply()
+    await loadComments()
+  } catch (err) {
+    alert(err.response?.data?.message || 'Không thể gửi phản hồi')
+  } finally {
+    submitting.value = false
+  }
+}
+
+// Permission check helpers
+const currentUserRole = computed(() => {
+  if (!authStore.user?.id) return null
+  const member = members.value.find(m => m.userId === authStore.user.id || m.id === authStore.user.id)
+  return member ? member.role : null
+})
+
+function canManageComment(comment) {
+  if (comment.isDeleted) return false
+  
+  // 1. Author check
+  const isAuthor = authStore.user?.id === comment.userId
+  if (isAuthor) return true
+  
+  // 2. Admin check
+  if (authStore.isAdmin) return true
+  
+  // 3. Project Manager/Owner check
+  const role = currentUserRole.value
+  const isProjectManager = role === 0 || role === 1 || role === 'Owner' || role === 'Manager' || role === 'Admin'
+  
+  return isProjectManager
 }
 
 onMounted(() => {
@@ -430,18 +582,93 @@ onMounted(() => {
   color: var(--color-text-tertiary);
 }
 
-.btn-delete {
-  background: none;
-  border: none;
-  color: var(--color-danger);
-  font-size: var(--font-size-xs);
-  cursor: pointer;
-  padding: 0;
+.comment-actions {
+  display: flex;
+  gap: var(--space-3);
   margin-top: var(--space-2);
 }
 
-.btn-delete:hover {
+.btn-action {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--transition-fast);
+}
+
+.btn-action:hover {
   text-decoration: underline;
+  color: var(--color-primary-hover);
+}
+
+.btn-action.danger {
+  color: var(--color-danger);
+}
+
+.btn-action.danger:hover {
+  color: #be123c;
+}
+
+.edited-flag {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  margin-left: var(--space-2);
+  font-style: italic;
+}
+
+.edit-comment-area, .reply-input-area {
+  margin-top: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.edit-textarea, .reply-textarea {
+  min-height: 60px;
+  background: var(--color-bg);
+}
+
+.edit-actions, .reply-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.btn-action-sm {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  background: var(--color-white);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.btn-action-sm:hover:not(:disabled) {
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+.btn-action-sm.save {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.btn-action-sm.save:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: white;
+}
+
+.btn-action-sm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .empty-comments {
