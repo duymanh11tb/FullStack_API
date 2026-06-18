@@ -15,6 +15,8 @@
         :required="required"
         class="form-input"
         @input="$emit('update:modelValue', $event.target.value)"
+        @focus="$emit('focus', $event)"
+        @blur="$emit('blur', $event)"
       />
       <textarea
         v-else
@@ -26,6 +28,8 @@
         :rows="rows"
         class="form-input form-textarea"
         @input="$emit('update:modelValue', $event.target.value)"
+        @focus="$emit('focus', $event)"
+        @blur="$emit('blur', $event)"
       ></textarea>
     </div>
     <p v-if="error" class="form-error">{{ error }}</p>
@@ -47,7 +51,7 @@ defineProps({
   id: String
 })
 
-defineEmits(['update:modelValue'])
+defineEmits(['update:modelValue', 'focus', 'blur'])
 </script>
 
 <style scoped>

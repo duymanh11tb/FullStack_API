@@ -267,6 +267,7 @@
               v-model="userSearchQuery"
               placeholder="Nhập tên, email hoặc username..."
               @focus="showSuggestions = true"
+              @click="showSuggestions = true"
               id="input-member-search"
               autocomplete="off"
             />
@@ -424,6 +425,8 @@ watch(showAddMemberModal, (newVal) => {
 watch(userSearchQuery, (newVal) => {
   const isSelectedName = memberForm.displayName && (newVal === memberForm.displayName)
   if (isSelectedName) return
+
+  showSuggestions.value = true
 
   if (searchDebounceTimeout) clearTimeout(searchDebounceTimeout)
   searchDebounceTimeout = setTimeout(() => {
