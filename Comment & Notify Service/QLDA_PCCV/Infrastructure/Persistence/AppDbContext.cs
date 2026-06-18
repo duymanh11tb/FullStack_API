@@ -152,6 +152,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         ActivityAction.StatusChanged => "status_changed",
         ActivityAction.Assigned => "assigned",
         ActivityAction.MemberAdded => "member_added",
+        ActivityAction.TaskCreated => "task_created",
+        ActivityAction.TaskUpdated => "task_updated",
         _ => throw new ArgumentOutOfRangeException(nameof(action), action, null)
     };
 
@@ -161,6 +163,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         "status_changed" => ActivityAction.StatusChanged,
         "assigned" => ActivityAction.Assigned,
         "member_added" => ActivityAction.MemberAdded,
+        "task_created" => ActivityAction.TaskCreated,
+        "task_updated" => ActivityAction.TaskUpdated,
         _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
     };
 
@@ -171,6 +175,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         NotificationType.CommentMention => "comment.mention",
         NotificationType.SprintStarted => "sprint.started",
         NotificationType.MemberAdded => "member.added",
+        NotificationType.TaskDeadlineApproaching => "task.deadline.approaching",
+        NotificationType.CommentAdded => "comment.added",
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
     };
 
@@ -181,6 +187,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         "comment.mention" => NotificationType.CommentMention,
         "sprint.started" => NotificationType.SprintStarted,
         "member.added" => NotificationType.MemberAdded,
+        "task.deadline.approaching" => NotificationType.TaskDeadlineApproaching,
+        "comment.added" => NotificationType.CommentAdded,
         _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
     };
 }

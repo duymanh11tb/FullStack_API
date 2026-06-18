@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QLDA_PCCV.Domain.Notifications.Entities;
+using QLDA_PCCV.Domain.Notifications.Enums;
 using QLDA_PCCV.Infrastructure.Persistence;
 using QLDA_PCCV.Services;
 
@@ -93,6 +94,33 @@ public class CommentController : ControllerBase
         _context.ActivityLogs.Add(activityLog);
 
         var createdMentionNotifications = await _notificationEventService.CreateCommentMentionNotificationsAsync(comment);
+
+        // Notify Task Assignee if they are not the commentator and have notifications enabled
+        if (task.AssigneeId.HasValue && task.AssigneeId.Value != userId)
+        {
+            var assigneeId = task.AssigneeId.Value;
+            var settings = await _context.NotificationSettings.FirstOrDefaultAsync(s => s.UserId == assigneeId);
+            var isNotificationEnabled = settings == null || settings.OnComment;
+
+            if (isNotificationEnabled)
+            {
+                var isAssigneeActive = await _context.Users.AnyAsync(u => u.Id == assigneeId && u.IsActive);
+                if (isAssigneeActive)
+                {
+                    _context.Notifications.Add(new Notification
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = assigneeId,
+                        Type = NotificationType.CommentAdded,
+                        Message = $"Có bình luận mới từ {User.FindFirst(ClaimTypes.Name)?.Value ?? "một người dùng"} trong công việc '{task.Title}'.",
+                        ReferenceId = comment.TaskId,
+                        ReferenceType = ReferenceType.Task,
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+        }
 
         await _context.SaveChangesAsync();
 

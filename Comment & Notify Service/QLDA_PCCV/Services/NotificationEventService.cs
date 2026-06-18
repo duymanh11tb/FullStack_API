@@ -175,17 +175,22 @@ public class NotificationEventService : INotificationEventService
             NotificationType.CommentMention => "Bạn đã được nhắc đến trong một bình luận công việc.",
             NotificationType.SprintStarted => "Một Sprint mới đã bắt đầu.",
             NotificationType.MemberAdded => "Bạn đã được thêm vào một dự án.",
+            NotificationType.TaskDeadlineApproaching => request.EventType.Contains("overdue") ? "Công việc của bạn đã quá hạn hoàn thành!" : "Công việc của bạn sắp đến hạn hoàn thành!",
+            NotificationType.CommentAdded => "Có bình luận mới trong công việc của bạn.",
             _ => "Bạn có một thông báo mới."
         };
     }
 
     private void AddActivityLogIfNeeded(NotificationEventRequest request, NotificationType notificationType, DateTime now)
     {
-        var action = notificationType switch
+        var normalizedEvent = NormalizeEventType(request.EventType);
+        var action = normalizedEvent switch
         {
-            NotificationType.TaskAssigned => ActivityAction.Assigned,
-            NotificationType.TaskStatusChanged => ActivityAction.StatusChanged,
-            NotificationType.MemberAdded => ActivityAction.MemberAdded,
+            "task.created" => ActivityAction.TaskCreated,
+            "task.updated" => ActivityAction.TaskUpdated,
+            "task.assigned" => ActivityAction.Assigned,
+            "task.status.changed" => ActivityAction.StatusChanged,
+            "member.added" => ActivityAction.MemberAdded,
             _ => (ActivityAction?)null
         };
 
@@ -210,6 +215,14 @@ public class NotificationEventService : INotificationEventService
     {
         switch (NormalizeEventType(eventType))
         {
+            case "task.created":
+                notificationType = NotificationType.TaskStatusChanged;
+                referenceType = ReferenceType.Task;
+                return true;
+            case "task.updated":
+                notificationType = NotificationType.TaskStatusChanged;
+                referenceType = ReferenceType.Task;
+                return true;
             case "task.assigned":
                 notificationType = NotificationType.TaskAssigned;
                 referenceType = ReferenceType.Task;
@@ -229,6 +242,15 @@ public class NotificationEventService : INotificationEventService
             case "member.added":
                 notificationType = NotificationType.MemberAdded;
                 referenceType = ReferenceType.Project;
+                return true;
+            case "task.deadline.approaching":
+            case "task.deadline.overdue":
+                notificationType = NotificationType.TaskDeadlineApproaching;
+                referenceType = ReferenceType.Task;
+                return true;
+            case "comment.added":
+                notificationType = NotificationType.CommentAdded;
+                referenceType = ReferenceType.Task;
                 return true;
             default:
                 notificationType = default;
@@ -252,6 +274,8 @@ public class NotificationEventService : INotificationEventService
         NotificationType.CommentMention => setting.OnMention,
         NotificationType.SprintStarted => setting.OnSprintStarted,
         NotificationType.MemberAdded => setting.OnMemberAdded,
+        NotificationType.CommentAdded => setting.OnComment,
+        NotificationType.TaskDeadlineApproaching => true,
         _ => true
     };
 

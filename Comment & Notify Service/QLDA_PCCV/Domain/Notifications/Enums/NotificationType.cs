@@ -6,5 +6,7 @@ public enum NotificationType
     TaskStatusChanged = 2,
     CommentMention = 3,
     SprintStarted = 4,
-    MemberAdded = 5
+    MemberAdded = 5,
+    TaskDeadlineApproaching = 6,
+    CommentAdded = 7
 }

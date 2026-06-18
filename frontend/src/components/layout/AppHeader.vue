@@ -207,9 +207,16 @@ function handleClickOutside(e) {
   }
 }
 
+let pollInterval = null
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   notifStore.loadNotifications()
+  
+  // Polling notifications every 10 seconds for real-time updates
+  pollInterval = setInterval(() => {
+    notifStore.loadNotifications()
+  }, 10000)
   
   // Initialize Theme
   const savedTheme = localStorage.getItem('theme')
@@ -221,6 +228,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+  if (pollInterval) {
+    clearInterval(pollInterval)
+  }
 })
 </script>
 
