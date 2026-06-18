@@ -7,16 +7,16 @@ export const projectAPI = axios.create({
   timeout: 10000 // 10 seconds timeout
 })
 
-// ── API 2: Comment & Notify Service ──
-export const notifyAPI = axios.create({
-  baseURL: import.meta.env.VITE_NOTIFY_API_URL,
+// ── API 2: Task Service ──
+export const taskAPI = axios.create({
+  baseURL: import.meta.env.VITE_TASK_API_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 10000
 })
 
-// ── API 3: Task Service ──
-export const taskAPI = axios.create({
-  baseURL: import.meta.env.VITE_TASK_API_URL,
+// ── API 3: Comment & Notify Service ──
+export const notifyAPI = axios.create({
+  baseURL: import.meta.env.VITE_NOTIFY_API_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 10000
 })
@@ -33,8 +33,8 @@ function handleRequest(config) {
 }
 
 projectAPI.interceptors.request.use(handleRequest, Promise.reject)
-notifyAPI.interceptors.request.use(handleRequest, Promise.reject)
 taskAPI.interceptors.request.use(handleRequest, Promise.reject)
+notifyAPI.interceptors.request.use(handleRequest, Promise.reject)
 
 // ── Response logger ──
 function handleResponse(response) {
@@ -43,8 +43,8 @@ function handleResponse(response) {
 }
 
 projectAPI.interceptors.response.use(handleResponse, (err) => handleError(err))
-notifyAPI.interceptors.response.use(handleResponse, (err) => handleError(err))
 taskAPI.interceptors.response.use(handleResponse, (err) => handleError(err))
+notifyAPI.interceptors.response.use(handleResponse, (err) => handleError(err))
 
 let lastAlertTime = 0
 
@@ -88,15 +88,15 @@ function handleError(error) {
 async function checkApiConnections() {
   const apis = [
     { name: 'API 1: Project & Member Service', client: projectAPI, pingPath: '/openapi/v1.json' },
-    { name: 'API 2: Comment & Notify Service', client: notifyAPI, pingPath: '/swagger/v1/swagger.json' },
-    { name: 'API 3: Task & Kanban Service', client: taskAPI, pingPath: '/swagger/v1/swagger.json' }
+    { name: 'API 2: Task & Kanban Service', client: taskAPI, pingPath: '/api/Task' },
+    { name: 'API 3: Comment & Notify Service', client: notifyAPI, pingPath: '/swagger/v1/swagger.json' }
   ]
 
   console.log('%c🔍 Đang kiểm tra kết nối tới các dịch vụ API...', 'color: #3b82f6; font-weight: bold;');
 
   apis.forEach(async (api) => {
     try {
-      // Gửi request ngắn tới openapi/swagger JSON của mỗi API để kiểm tra kết nối (trả về 200 OK để không bị đỏ F12)
+      // Gửi request ngắn tới API/swagger JSON của mỗi API để kiểm tra kết nối (trả về 200 OK để không bị đỏ F12)
       await axios.get(api.client.defaults.baseURL + api.pingPath, { timeout: 5000 })
       console.log(`%c✅ [${api.name}] Kết nối thành công tới ${api.client.defaults.baseURL}`, 'color: #10b981; font-weight: bold;');
     } catch (error) {
