@@ -194,6 +194,105 @@ public class AuthController : ControllerBase
     {
         return HashPassword(password) == passwordHash;
     }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("users")]
+    public async Task<IActionResult> GetAllUsers()
+    {
+        var users = await _context.Users
+            .Select(u => new
+            {
+                u.Id,
+                u.Username,
+                u.Email,
+                u.FullName,
+                u.Role,
+                u.IsActive,
+                u.CreatedAt,
+                u.UpdatedAt
+            })
+            .OrderByDescending(u => u.CreatedAt)
+            .ToListAsync();
+
+        return Ok(users);
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("users/{id}")]
+    public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found." });
+        }
+
+        if (user.Username != request.Username && await _context.Users.AnyAsync(u => u.Username == request.Username))
+        {
+            return BadRequest(new { Message = "Username already exists." });
+        }
+        if (user.Email != request.Email && await _context.Users.AnyAsync(u => u.Email == request.Email))
+        {
+            return BadRequest(new { Message = "Email already exists." });
+        }
+
+        user.Username = request.Username;
+        user.Email = request.Email;
+        user.FullName = request.FullName;
+        user.Role = request.Role;
+        user.IsActive = request.IsActive;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            user.PasswordHash = HashPassword(request.Password);
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { Message = "User updated successfully." });
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpDelete("users/{id}")]
+    public async Task<IActionResult> DeleteUser(Guid id)
+    {
+        var user = await _context.Users
+            .Include(u => u.RefreshTokens)
+            .Include(u => u.NotificationSetting)
+            .FirstOrDefaultAsync(u => u.Id == id);
+
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found." });
+        }
+
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(userIdString, out var currentUserId) && currentUserId == id)
+        {
+            return BadRequest(new { Message = "You cannot delete your own account." });
+        }
+
+        var comments = _context.Comments.Where(c => c.UserId == id);
+        _context.Comments.RemoveRange(comments);
+
+        var logs = _context.ActivityLogs.Where(l => l.UserId == id);
+        _context.ActivityLogs.RemoveRange(logs);
+
+        var notifies = _context.Notifications.Where(n => n.UserId == id);
+        _context.Notifications.RemoveRange(notifies);
+
+        if (user.NotificationSetting != null)
+        {
+            _context.NotificationSettings.Remove(user.NotificationSetting);
+        }
+        _context.RefreshTokens.RemoveRange(user.RefreshTokens);
+
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { Message = "User deleted successfully." });
+    }
 }
 
 public class RegisterRequest
@@ -208,4 +307,14 @@ public class LoginRequest
 {
     public string UsernameOrEmail { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
+}
+
+public class UpdateUserRequest
+{
+    public string Username { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public UserRole Role { get; set; } = UserRole.User;
+    public bool IsActive { get; set; } = true;
+    public string? Password { get; set; }
 }

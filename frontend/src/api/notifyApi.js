@@ -13,6 +13,15 @@ export const getMe = () =>
 export const searchUsers = (query) =>
   notifyAPI.get('/api/Auth/users/search', { params: { query } })
 
+export const getAllUsers = () =>
+  notifyAPI.get('/api/Auth/users')
+
+export const updateUser = (id, data) =>
+  notifyAPI.put(`/api/Auth/users/${id}`, data)
+
+export const deleteUser = (id) =>
+  notifyAPI.delete(`/api/Auth/users/${id}`)
+
 // ── Comments ──
 export const createComment = (data) =>
   notifyAPI.post('/api/Comment', data)
