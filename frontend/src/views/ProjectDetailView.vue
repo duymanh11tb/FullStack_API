@@ -229,6 +229,14 @@
           </div>
           <EmptyState v-else title="Chưa có milestone nào" description="Tạo milestone để theo dõi tiến độ dự án." />
         </div>
+
+        <!-- Activities Tab -->
+        <div v-if="activeTab === 'activities'" class="tab-panel">
+          <div class="panel-header">
+            <h3>Nhật ký hoạt động</h3>
+          </div>
+          <ActivityLogList :project-id="projectId" />
+        </div>
       </div>
     </template>
 
@@ -313,6 +321,7 @@ import BaseModal from '../components/common/BaseModal.vue'
 import BaseInput from '../components/common/BaseInput.vue'
 import LoadingSpinner from '../components/common/LoadingSpinner.vue'
 import EmptyState from '../components/common/EmptyState.vue'
+import ActivityLogList from '../components/common/ActivityLogList.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -344,7 +353,8 @@ const projectId = computed(() => route.params.id)
 const tabs = computed(() => [
   { key: 'members', label: 'Thành viên', count: members.value.length },
   { key: 'sprints', label: 'Sprints', count: sprints.value.length },
-  { key: 'milestones', label: 'Milestones', count: milestones.value.length }
+  { key: 'milestones', label: 'Milestones', count: milestones.value.length },
+  { key: 'activities', label: 'Nhật ký hoạt động' }
 ])
 
 const avatarColors = ['#2563EB', '#7C3AED', '#DC2626', '#D97706', '#16A34A', '#0891B2', '#DB2777', '#4F46E5']

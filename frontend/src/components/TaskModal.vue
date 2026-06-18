@@ -66,8 +66,31 @@
         </div>
 
         <div v-if="isEdit" class="task-discussion-container">
-          <h3 class="discussion-title">Discussion</h3>
-          <TaskDiscussion :task-id="formData.taskId" />
+          <div class="task-modal-tabs">
+            <button 
+              type="button" 
+              class="tab-btn" 
+              :class="{ active: activeTab === 'discussion' }"
+              @click="activeTab = 'discussion'"
+            >
+              Thảo luận
+            </button>
+            <button 
+              type="button" 
+              class="tab-btn" 
+              :class="{ active: activeTab === 'activities' }"
+              @click="activeTab = 'activities'"
+            >
+              Hoạt động
+            </button>
+          </div>
+          
+          <div v-if="activeTab === 'discussion'" class="tab-pane">
+            <TaskDiscussion :task-id="formData.taskId" />
+          </div>
+          <div v-else-if="activeTab === 'activities'" class="tab-pane">
+            <ActivityLogList :task-id="formData.taskId" />
+          </div>
         </div>
       </div>
     </div>
@@ -77,6 +100,7 @@
 <script setup>
 import { ref, watch, defineProps, defineEmits } from 'vue';
 import TaskDiscussion from './task/TaskDiscussion.vue';
+import ActivityLogList from './common/ActivityLogList.vue';
 
 const props = defineProps({
   isOpen: Boolean,
@@ -87,6 +111,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'save', 'delete']);
 
 const isEdit = ref(false);
+const activeTab = ref('discussion');
 const formData = ref({
   title: '',
   description: '',
@@ -98,6 +123,7 @@ const formData = ref({
 
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
+    activeTab.value = 'discussion';
     if (props.task) {
       isEdit.value = true;
       // Format datetime-local string
@@ -324,5 +350,40 @@ input[type="color"] {
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.task-modal-tabs {
+  display: flex;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 16px;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.tab-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 </style>

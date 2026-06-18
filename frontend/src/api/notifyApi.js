@@ -36,3 +36,14 @@ export const getNotificationSettings = () =>
 
 export const updateNotificationSettings = (data) =>
   notifyAPI.put('/api/Notification/settings', data)
+
+// ── Activity Log ──
+export const getActivityLogsByProject = (projectId) =>
+  notifyAPI.get(`/api/ActivityLog/project/${projectId}`)
+
+export const getActivityLogsByTask = (taskId) =>
+  notifyAPI.get(`/api/ActivityLog/task/${taskId}`)
+
+export const getActivityLogsByUser = (userId) =>
+  notifyAPI.get(`/api/ActivityLog/user/${userId}`)
+
