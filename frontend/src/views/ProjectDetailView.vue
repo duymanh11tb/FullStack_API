@@ -259,9 +259,66 @@
     <!-- Add Member Modal -->
     <BaseModal v-model="showAddMemberModal" title="Thêm thành viên" size="sm">
       <form @submit.prevent="handleAddMember">
-        <BaseInput v-model="memberForm.userId" label="User ID" required id="input-member-userid" />
-        <BaseInput v-model="memberForm.displayName" label="Tên hiển thị" required id="input-member-name" />
-        <BaseInput v-model="memberForm.email" label="Email" type="email" id="input-member-email" />
+        <!-- Search system user -->
+        <div class="form-group search-member-group">
+          <label class="form-label">Tìm thành viên trong hệ thống</label>
+          <div class="search-input-wrapper">
+            <BaseInput
+              v-model="userSearchQuery"
+              placeholder="Nhập tên, email hoặc username..."
+              @focus="showSuggestions = true"
+              id="input-member-search"
+              autocomplete="off"
+            />
+            <button 
+              v-if="userSearchQuery || memberForm.userId" 
+              type="button" 
+              class="clear-search-btn"
+              @click="clearSelectedUser"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <!-- Autocomplete Suggestions Dropdown -->
+          <transition name="fade">
+            <div 
+              v-if="showSuggestions && filteredSystemUsers.length > 0" 
+              class="suggestions-dropdown"
+            >
+              <div 
+                v-for="u in filteredSystemUsers" 
+                :key="u.id" 
+                class="suggestion-item"
+                @click="selectSystemUser(u)"
+              >
+                <div class="user-avatar" :style="{ backgroundColor: getAvatarColor(u.fullName || u.username) }">
+                  {{ (u.fullName || u.username).charAt(0).toUpperCase() }}
+                </div>
+                <div class="user-info">
+                  <span class="user-fullname">{{ u.fullName }}</span>
+                  <span class="user-meta">@{{ u.username }} • {{ u.email }}</span>
+                </div>
+              </div>
+            </div>
+            <div 
+              v-else-if="showSuggestions && isSearchingUsers && userSearchQuery"
+              class="suggestions-dropdown loading-dropdown"
+            >
+              <div class="dropdown-status-text">Đang tìm kiếm...</div>
+            </div>
+            <div 
+              v-else-if="showSuggestions && !isSearchingUsers && userSearchQuery && filteredSystemUsers.length === 0"
+              class="suggestions-dropdown empty-dropdown"
+            >
+              <div class="dropdown-status-text">Không tìm thấy thành viên phù hợp</div>
+            </div>
+          </transition>
+        </div>
+
+        <BaseInput v-model="memberForm.userId" label="User ID" required readonly disabled id="input-member-userid" />
+        <BaseInput v-model="memberForm.displayName" label="Tên hiển thị" required readonly disabled id="input-member-name" />
+        <BaseInput v-model="memberForm.email" label="Email" type="email" readonly disabled id="input-member-email" />
         <div class="form-group">
           <label class="form-label">Vai trò</label>
           <select v-model="memberForm.role" class="form-select">
@@ -273,7 +330,7 @@
       </form>
       <template #footer>
         <BaseButton variant="secondary" @click="showAddMemberModal = false">Hủy</BaseButton>
-        <BaseButton variant="primary" @click="handleAddMember">Thêm</BaseButton>
+        <BaseButton variant="primary" @click="handleAddMember" :disabled="!memberForm.userId">Thêm</BaseButton>
       </template>
     </BaseModal>
 
@@ -307,7 +364,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '../stores/projects'
 import {
@@ -315,6 +372,7 @@ import {
   getSprints, createSprint, updateSprint, startSprint, completeSprint,
   getMilestones, createMilestone, updateMilestone, deleteMilestone
 } from '../api/projectApi'
+import { searchUsers } from '../api/notifyApi'
 import StatusBadge from '../components/common/StatusBadge.vue'
 import BaseButton from '../components/common/BaseButton.vue'
 import BaseModal from '../components/common/BaseModal.vue'
@@ -347,6 +405,74 @@ const editForm = reactive({ name: '', description: '', startDate: '', endDate: '
 const memberForm = reactive({ userId: '', displayName: '', email: '', role: 2 })
 const sprintForm = reactive({ name: '', goal: '', startDate: '', endDate: '' })
 const milestoneForm = reactive({ title: '', description: '', dueDate: '' })
+
+// User autocomplete state
+const userSearchQuery = ref('')
+const filteredSystemUsers = ref([])
+const showSuggestions = ref(false)
+const isSearchingUsers = ref(false)
+let searchDebounceTimeout = null
+
+// Watch showAddMemberModal to clear user selection on modal open
+watch(showAddMemberModal, (newVal) => {
+  if (newVal) {
+    clearSelectedUser()
+  }
+})
+
+// Search system users with debounce
+watch(userSearchQuery, (newVal) => {
+  const isSelectedName = memberForm.displayName && (newVal === memberForm.displayName)
+  if (isSelectedName) return
+
+  if (searchDebounceTimeout) clearTimeout(searchDebounceTimeout)
+  searchDebounceTimeout = setTimeout(() => {
+    fetchSystemUsers(newVal)
+  }, 300)
+})
+
+async function fetchSystemUsers(query) {
+  isSearchingUsers.value = true
+  try {
+    const res = await searchUsers(query)
+    filteredSystemUsers.value = res.data?.data || res.data || []
+  } catch (err) {
+    console.error('Failed to search users:', err)
+  } finally {
+    isSearchingUsers.value = false
+  }
+}
+
+function selectSystemUser(user) {
+  memberForm.userId = user.id
+  memberForm.displayName = user.fullName || user.username
+  memberForm.email = user.email
+  
+  userSearchQuery.value = user.fullName || user.username
+  showSuggestions.value = false
+}
+
+function clearSelectedUser() {
+  memberForm.userId = ''
+  memberForm.displayName = ''
+  memberForm.email = ''
+  userSearchQuery.value = ''
+  filteredSystemUsers.value = []
+  showSuggestions.value = false
+  fetchSystemUsers('')
+}
+
+const handleClickOutside = (event) => {
+  const wrapper = document.querySelector('.search-member-group')
+  if (wrapper && !wrapper.contains(event.target)) {
+    showSuggestions.value = false
+  }
+}
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
 
 const projectId = computed(() => route.params.id)
 
@@ -608,6 +734,8 @@ watch(() => route.params.id, () => {
 
 onMounted(() => {
   loadProjectData()
+  document.addEventListener('click', handleClickOutside)
+  fetchSystemUsers('')
 })
 </script>
 
@@ -1010,4 +1138,122 @@ onMounted(() => {
 
 .alert { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--font-size-sm); margin-bottom: var(--space-4); }
 .alert-error { background: var(--color-danger-light); color: var(--color-danger); }
+
+/* Autocomplete suggestions */
+.search-member-group {
+  position: relative;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input-wrapper :deep(.base-input-wrapper) {
+  width: 100%;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast);
+}
+
+.clear-search-btn:hover {
+  color: var(--color-danger);
+}
+
+.suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 100;
+  margin-top: 4px;
+  padding: 4px;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.suggestion-item:hover {
+  background: var(--sidebar-hover);
+}
+
+.suggestion-item .user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  flex-shrink: 0;
+}
+
+.suggestion-item .user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.suggestion-item .user-fullname {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-item .user-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-status-text {
+  padding: var(--space-3);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity var(--transition-fast);
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
 </style>

@@ -10,6 +10,9 @@ export const login = (data) =>
 export const getMe = () =>
   notifyAPI.get('/api/Auth/me')
 
+export const searchUsers = (query) =>
+  notifyAPI.get('/api/Auth/users/search', { params: { query } })
+
 // ── Comments ──
 export const createComment = (data) =>
   notifyAPI.post('/api/Comment', data)

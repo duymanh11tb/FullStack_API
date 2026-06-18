@@ -130,6 +130,34 @@ public class AuthController : ControllerBase
         return Ok(user);
     }
 
+    [Authorize]
+    [HttpGet("users/search")]
+    public async Task<IActionResult> SearchUsers([FromQuery] string? query = null)
+    {
+        var dbQuery = _context.Users.Where(u => u.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var lowerQuery = query.ToLower();
+            dbQuery = dbQuery.Where(u => u.Username.ToLower().Contains(lowerQuery) || 
+                                         u.Email.ToLower().Contains(lowerQuery) || 
+                                         u.FullName.ToLower().Contains(lowerQuery));
+        }
+
+        var users = await dbQuery
+            .Select(u => new
+            {
+                u.Id,
+                u.Username,
+                u.Email,
+                u.FullName
+            })
+            .Take(20)
+            .ToListAsync();
+
+        return Ok(users);
+    }
+
     private string GenerateJwtToken(User user)
     {
         var claims = new[]
