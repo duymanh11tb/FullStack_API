@@ -14,7 +14,7 @@
 
     <!-- Page List -->
     <div class="pages-list">
-      <template v-for="(page, index) in pages" :key="index">
+      <span v-for="(page, index) in pages" :key="index" class="page-item-wrapper">
         <span v-if="page === '...'" class="pagination-ellipsis">...</span>
         <button
           v-else
@@ -24,7 +24,7 @@
         >
           {{ page }}
         </button>
-      </template>
+      </span>
     </div>
 
     <!-- Next Button -->
