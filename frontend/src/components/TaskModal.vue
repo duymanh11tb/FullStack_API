@@ -183,12 +183,14 @@ const deleteTask = () => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn 0.25s ease;
 }
 
 @keyframes fadeIn {
@@ -200,8 +202,11 @@ const deleteTask = () => {
   width: 100%;
   max-width: 500px;
   background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-xl);
+  border-radius: var(--radius-xl);
   padding: 24px;
-  animation: slideUp 0.3s ease;
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   transition: max-width 0.3s ease;
 }
 

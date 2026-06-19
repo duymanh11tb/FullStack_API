@@ -545,7 +545,7 @@ onMounted(() => {
 
 .comment-content {
   flex: 1;
-  background: var(--color-white);
+  background: var(--bg-white-to-card);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
@@ -687,7 +687,7 @@ onMounted(() => {
 
 .comment-input-area {
   padding: var(--space-4);
-  background: var(--color-white);
+  background: var(--bg-white-to-card);
   border-top: 1px solid var(--color-border);
   position: relative;
 }
@@ -727,7 +727,7 @@ onMounted(() => {
   left: var(--space-4);
   width: calc(100% - (var(--space-4) * 2));
   max-width: 320px;
-  background: var(--color-white);
+  background: var(--bg-white-to-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);

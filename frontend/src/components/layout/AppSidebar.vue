@@ -1,13 +1,13 @@
 <template>
   <aside class="app-sidebar" :class="{ collapsed: collapsed }">
     <div class="sidebar-header">
-      <router-link to="/" class="sidebar-logo" id="link-home">
+      <router-link to="/dashboard" class="sidebar-logo" id="link-home">
         <div class="logo-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="7" height="7" rx="1" />
-            <rect x="14" y="3" width="7" height="7" rx="1" />
-            <rect x="3" y="14" width="7" height="7" rx="1" />
-            <rect x="14" y="14" width="7" height="7" rx="1" />
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="3" width="7" height="7" rx="1.5" />
+            <rect x="14" y="3" width="7" height="7" rx="1.5" />
+            <rect x="3" y="14" width="7" height="7" rx="1.5" />
+            <rect x="14" y="14" width="7" height="7" rx="1.5" />
           </svg>
         </div>
         <span class="logo-text">QLDA</span>
@@ -18,7 +18,7 @@
       <div class="nav-section">
         <span class="nav-section-title">CHÍNH</span>
 
-        <router-link to="/" class="nav-item" :class="{ active: isActive('/') }" id="nav-dashboard">
+        <router-link to="/dashboard" class="nav-item" :class="{ active: isActive('/dashboard') }" id="nav-dashboard">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="7" height="9" rx="1" />
             <rect x="14" y="3" width="7" height="5" rx="1" />
@@ -104,7 +104,7 @@ const unreadCount = computed(() => notifStore.unreadCount)
 const isAdmin = computed(() => authStore.isAdmin)
 
 function isActive(path) {
-  if (path === '/') return route.path === '/'
+  if (path === '/dashboard') return route.path === '/dashboard'
   return route.path.startsWith(path)
 }
 </script>
@@ -140,7 +140,7 @@ function isActive(path) {
   display: flex;
   align-items: center;
   padding: 0 var(--space-5);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .sidebar-logo {
@@ -154,23 +154,25 @@ function isActive(path) {
 .logo-icon {
   width: 36px;
   height: 36px;
-  background: var(--color-primary);
+  background: var(--gradient-primary);
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 .logo-text {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.5px;
+  font-family: var(--font-heading);
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: var(--space-4) var(--space-3);
+  padding: var(--space-5) var(--space-3);
   overflow-y: auto;
 }
 
@@ -180,10 +182,10 @@ function isActive(path) {
 
 .nav-section-title {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.4);
-  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 2px;
   padding: 0 var(--space-3);
   margin-bottom: var(--space-3);
 }
@@ -192,14 +194,14 @@ function isActive(path) {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  padding: 10px var(--space-3);
   border-radius: var(--radius-md);
   color: var(--sidebar-text);
   text-decoration: none;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   transition: all var(--transition-fast);
-  margin-bottom: 2px;
+  margin-bottom: 4px;
   position: relative;
 }
 
@@ -219,8 +221,8 @@ function isActive(path) {
   content: '';
   position: absolute;
   left: 0;
-  top: 4px;
-  bottom: 4px;
+  top: 6px;
+  bottom: 6px;
   width: 3px;
   background: var(--sidebar-active-border);
   border-radius: 0 2px 2px 0;
@@ -239,5 +241,6 @@ function isActive(path) {
   align-items: center;
   justify-content: center;
   padding: 0 6px;
+  box-shadow: 0 2px 5px rgba(225, 29, 72, 0.4);
 }
 </style>

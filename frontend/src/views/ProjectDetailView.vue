@@ -230,6 +230,11 @@
           <EmptyState v-else title="Chưa có milestone nào" description="Tạo milestone để theo dõi tiến độ dự án." />
         </div>
 
+        <!-- Analytics Tab -->
+        <div v-if="activeTab === 'analytics'" class="tab-panel">
+          <ProjectAnalytics :project-id="projectId" />
+        </div>
+
         <!-- Activities Tab -->
         <div v-if="activeTab === 'activities'" class="tab-panel">
           <div class="panel-header">
@@ -381,6 +386,7 @@ import BaseInput from '../components/common/BaseInput.vue'
 import LoadingSpinner from '../components/common/LoadingSpinner.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import ActivityLogList from '../components/common/ActivityLogList.vue'
+import ProjectAnalytics from '../components/project/ProjectAnalytics.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -483,6 +489,7 @@ const tabs = computed(() => [
   { key: 'members', label: 'Thành viên', count: members.value.length },
   { key: 'sprints', label: 'Sprints', count: sprints.value.length },
   { key: 'milestones', label: 'Milestones', count: milestones.value.length },
+  { key: 'analytics', label: 'Thống kê' },
   { key: 'activities', label: 'Nhật ký hoạt động' }
 ])
 
@@ -873,7 +880,7 @@ onMounted(() => {
 
 /* Tab content */
 .tab-content {
-  background: var(--color-white);
+  background: var(--bg-white-to-card);
   border: 1px solid var(--color-border);
   border-top: none;
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
@@ -950,7 +957,8 @@ onMounted(() => {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
-  background: var(--color-white);
+  background: var(--bg-white-to-card);
+  color: var(--color-text-primary);
   cursor: pointer;
 }
 
@@ -1131,7 +1139,8 @@ onMounted(() => {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-base);
-  background: var(--color-white);
+  background: var(--bg-white-to-card);
+  color: var(--color-text-primary);
 }
 .form-select:focus {
   border-color: var(--color-primary);

@@ -194,8 +194,8 @@ onMounted(() => {
 }
 
 .settings-card {
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
+  background: var(--bg-white-to-card);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: var(--space-6);
 }

@@ -1,16 +1,16 @@
 <template>
   <div class="project-list-page">
     <div class="page-header">
-      <div>
+      <div class="header-main">
         <h1>Dự án</h1>
-        <p class="text-secondary">Quản lý tất cả dự án của bạn</p>
+        <p class="subtitle">Quản lý và cộng tác trên tất cả dự án hệ thống</p>
       </div>
       <BaseButton v-if="isAdmin" variant="primary" @click="showCreateModal = true" id="btn-create-project">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="12" y1="5" x2="12" y2="19" />
           <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
-        Tạo dự án
+        Tạo dự án mới
       </BaseButton>
     </div>
 
@@ -20,7 +20,7 @@
         <button
           :class="['filter-tab', { active: !myProjects }]"
           @click="myProjects = false; loadData()"
-        >Tất cả</button>
+        >Tất cả dự án</button>
         <button
           :class="['filter-tab', { active: myProjects }]"
           @click="myProjects = true; loadData()"
@@ -28,47 +28,46 @@
       </div>
     </div>
 
-    <LoadingSpinner v-if="projectStore.loading" text="Đang tải dự án..." />
+    <LoadingSpinner v-if="projectStore.loading" text="Đang tải danh sách dự án..." />
 
     <div v-else-if="projectStore.projects.length > 0" class="projects-grid">
       <div
         v-for="project in projectStore.projects"
         :key="project.id"
-        class="project-card"
+        class="project-card glass-panel"
+        :style="{ borderTop: `4px solid ${project.color || '#2563EB'}` }"
         @click="$router.push(`/projects/${project.id}`)"
       >
-        <div class="card-top" :style="{ borderTopColor: project.color || '#2563EB' }">
-          <div class="card-header">
-            <div class="project-icon" :style="{ background: project.color || '#2563EB' }">
-              {{ project.name.charAt(0).toUpperCase() }}
-            </div>
-            <StatusBadge :status="project.status" />
+        <div class="card-header">
+          <div class="project-icon" :style="{ background: project.color || '#2563EB' }">
+            {{ project.name.charAt(0).toUpperCase() }}
           </div>
+          <StatusBadge :status="project.status" />
+        </div>
 
-          <h3 class="project-name">{{ project.name }}</h3>
-          <p class="project-desc">{{ project.description || 'Không có mô tả' }}</p>
+        <h3 class="project-name">{{ project.name }}</h3>
+        <p class="project-desc">{{ project.description || 'Không có mô tả cho dự án này.' }}</p>
 
-          <div class="card-footer">
-            <div class="meta-row">
-              <span class="meta-item">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                </svg>
-                {{ project.memberCount || 0 }}
-              </span>
-              <span class="meta-item">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-                {{ project.sprintCount || 0 }} sprints
-              </span>
-            </div>
-            <div class="meta-date">
-              {{ formatDate(project.startDate) }}
-              <template v-if="project.endDate"> — {{ formatDate(project.endDate) }}</template>
-            </div>
+        <div class="card-footer">
+          <div class="meta-row">
+            <span class="meta-item" title="Thành viên">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+              </svg>
+              {{ project.memberCount || 0 }} thành viên
+            </span>
+            <span class="meta-item" title="Sprints">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              {{ project.sprintCount || 0 }} sprints
+            </span>
+          </div>
+          <div class="meta-date">
+            <span>{{ formatDate(project.startDate) }}</span>
+            <span v-if="project.endDate"> — {{ formatDate(project.endDate) }}</span>
           </div>
         </div>
       </div>
@@ -77,10 +76,14 @@
     <EmptyState
       v-else
       title="Chưa có dự án nào"
-      description="Chưa có dự án nào được tạo hoặc bạn chưa tham gia dự án nào."
+      description="Không tìm thấy dự án nào khớp với bộ lọc hoặc bạn chưa được thêm vào dự án nào."
     >
       <BaseButton v-if="isAdmin" variant="primary" class="mt-4" @click="showCreateModal = true">
-        Tạo dự án mới
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 4px;">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Tạo dự án ngay
       </BaseButton>
     </EmptyState>
 
@@ -89,13 +92,16 @@
       <form @submit.prevent="handleCreate" id="form-create-project">
         <div v-if="formError" class="alert alert-error">{{ formError }}</div>
 
-        <BaseInput v-model="createForm.name" label="Tên dự án" placeholder="Ví dụ: Website Bán Hàng" required id="input-project-name" />
-        <BaseInput v-model="createForm.description" label="Mô tả" type="textarea" placeholder="Mô tả ngắn gọn về dự án..." id="input-project-desc" />
-        <BaseInput v-model="createForm.startDate" label="Ngày bắt đầu" type="date" required id="input-project-start" />
-        <BaseInput v-model="createForm.endDate" label="Ngày kết thúc" type="date" id="input-project-end" />
+        <BaseInput v-model="createForm.name" label="Tên dự án" placeholder="Ví dụ: Hệ thống quản lý kho..." required id="input-project-name" />
+        <BaseInput v-model="createForm.description" label="Mô tả dự án" type="textarea" placeholder="Nhập mô tả ngắn gọn về mục tiêu dự án..." id="input-project-desc" />
+        
+        <div class="form-dates-row">
+          <BaseInput v-model="createForm.startDate" label="Ngày bắt đầu" type="date" required id="input-project-start" />
+          <BaseInput v-model="createForm.endDate" label="Ngày kết thúc (không bắt buộc)" type="date" id="input-project-end" />
+        </div>
 
-        <div class="form-group">
-          <label class="form-label">Màu sắc</label>
+        <div class="form-group color-picker-group">
+          <label class="form-label">Tông màu chủ đề dự án</label>
           <div class="color-picker">
             <button
               v-for="color in colors"
@@ -103,7 +109,7 @@
               type="button"
               class="color-option"
               :class="{ active: createForm.color === color }"
-              :style="{ background: color }"
+              :style="{ background: color, color: color }"
               @click="createForm.color = color"
             ></button>
           </div>
@@ -111,7 +117,7 @@
       </form>
 
       <template #footer>
-        <BaseButton variant="secondary" @click="showCreateModal = false">Hủy</BaseButton>
+        <BaseButton variant="secondary" @click="showCreateModal = false">Hủy bỏ</BaseButton>
         <BaseButton variant="primary" :loading="creating" @click="handleCreate">Tạo dự án</BaseButton>
       </template>
     </BaseModal>
@@ -137,7 +143,7 @@ const creating = ref(false)
 const formError = ref('')
 const myProjects = ref(false)
 
-const colors = ['#2563EB', '#7C3AED', '#DC2626', '#D97706', '#16A34A', '#0891B2', '#DB2777', '#4F46E5']
+const colors = ['#2563EB', '#7C3AED', '#DC2626', '#D97706', '#10B981', '#0891B2', '#DB2777', '#4F46E5']
 
 const createForm = reactive({
   name: '',
@@ -191,24 +197,36 @@ onMounted(() => {
 
 <style scoped>
 .project-list-page {
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.4s ease-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .page-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   margin-bottom: var(--space-6);
+  flex-wrap: wrap;
+  gap: var(--space-4);
 }
 
 .page-header h1 {
   font-size: var(--font-size-2xl);
-  margin-bottom: var(--space-1);
+  font-weight: var(--font-weight-extrabold);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  margin-top: 2px;
 }
 
 .filter-bar {
@@ -217,18 +235,22 @@ onMounted(() => {
 
 .filter-tabs {
   display: flex;
-  gap: var(--space-1);
+  gap: 4px;
   background: var(--color-bg-secondary);
   border-radius: var(--radius-lg);
-  padding: 3px;
+  padding: 4px;
   width: fit-content;
 }
 
+[data-theme='dark'] .filter-tabs {
+  background: rgba(15, 23, 42, 0.4);
+}
+
 .filter-tab {
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-5);
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
 }
@@ -238,110 +260,132 @@ onMounted(() => {
 }
 
 .filter-tab.active {
-  background: var(--color-white);
+  background: var(--bg-white-to-card);
   color: var(--color-text-primary);
-  box-shadow: var(--shadow-xs);
-}
-
-.projects-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--space-4);
-}
-
-.project-card {
-  background: var(--bg-secondary);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  cursor: pointer;
-  transition: all var(--transition-slow);
   box-shadow: var(--shadow-sm);
 }
 
-.project-card:hover {
-  border-color: rgba(99, 102, 241, 0.4);
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-4px) scale(1.01);
+/* Projects Cards Grid */
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-5);
 }
 
-.card-top {
+.project-card {
   padding: var(--space-5);
-  border-top: 4px solid;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: all var(--transition-slow);
+}
+
+.project-card:hover {
+  transform: translateY(-4px);
 }
 
 .card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .project-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-lg);
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-extrabold);
+  font-size: var(--font-size-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .project-name {
   font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
   margin-bottom: var(--space-2);
 }
 
 .project-desc {
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin-bottom: var(--space-4);
-  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--space-5);
+  flex: 1;
 }
 
 .card-footer {
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .meta-row {
   display: flex;
   gap: var(--space-4);
-  margin-bottom: var(--space-2);
 }
 
 .meta-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .meta-date {
   font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
-/* Color picker */
+/* Modals styles */
+.form-dates-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+@media (max-width: 576px) {
+  .form-dates-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+.color-picker-group {
+  margin-top: var(--space-4);
+}
+
+.form-label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+
 .color-picker {
   display: flex;
-  gap: var(--space-2);
-  margin-top: var(--space-1);
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .color-option {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-full);
   border: 2px solid transparent;
   transition: all var(--transition-fast);
@@ -349,24 +393,12 @@ onMounted(() => {
 }
 
 .color-option:hover {
-  transform: scale(1.1);
+  transform: scale(1.15);
 }
 
 .color-option.active {
   border-color: var(--color-text-primary);
-  box-shadow: 0 0 0 2px var(--color-white), 0 0 0 4px currentColor;
-}
-
-.form-group {
-  margin-bottom: var(--space-4);
-}
-
-.form-label {
-  display: block;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-  margin-bottom: var(--space-1);
+  box-shadow: 0 0 0 2px var(--bg-white-to-card), 0 0 0 4px currentColor;
 }
 
 .alert {
@@ -374,10 +406,12 @@ onMounted(() => {
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   margin-bottom: var(--space-4);
+  font-weight: var(--font-weight-medium);
 }
 
 .alert-error {
   background: var(--color-danger-light);
   color: var(--color-danger);
+  border: 1px solid rgba(225, 29, 72, 0.2);
 }
 </style>

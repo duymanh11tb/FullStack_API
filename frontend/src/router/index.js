@@ -2,6 +2,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
   {
+    path: '/',
+    name: 'Landing',
+    component: () => import('../views/LandingView.vue'),
+    meta: { guest: true }
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('../views/LoginView.vue'),
@@ -14,7 +20,7 @@ const routes = [
     meta: { guest: true }
   },
   {
-    path: '/',
+    path: '/dashboard',
     name: 'Dashboard',
     component: () => import('../views/DashboardView.vue'),
     meta: { requiresAuth: true }
@@ -71,6 +77,7 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !token) {
     next({ name: 'Login' })
   } else if (to.meta.guest && token) {
+    // If logged-in user goes to guest views (Landing, Login, Register), redirect to Dashboard
     next({ name: 'Dashboard' })
   } else if (to.meta.requiresAdmin && !isAdmin) {
     next({ name: 'Dashboard' }) // Redirect non-admins to dashboard

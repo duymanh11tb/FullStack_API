@@ -202,7 +202,7 @@ onMounted(() => {
 }
 
 .filter-tab.active {
-  background: var(--color-white);
+  background: var(--bg-white-to-card);
   color: var(--color-text-primary);
   box-shadow: var(--shadow-xs);
 }
@@ -222,7 +222,7 @@ onMounted(() => {
 
 /* Notification list */
 .notif-list {
-  background: var(--color-white);
+  background: var(--bg-white-to-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
