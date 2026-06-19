@@ -81,52 +81,59 @@
             </BaseButton>
           </div>
 
-          <div v-if="members.length > 0" class="member-table-wrapper">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Thành viên</th>
-                  <th>Email</th>
-                  <th>Vai trò</th>
-                  <th>Ngày tham gia</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="member in members" :key="member.id">
-                  <td>
-                    <div class="member-cell">
-                      <div class="avatar-sm" :style="{ background: getAvatarColor(member.displayName) }">
-                        {{ member.displayName?.charAt(0)?.toUpperCase() || '?' }}
+          <template v-if="members.length > 0">
+            <div class="member-table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Thành viên</th>
+                    <th>Email</th>
+                    <th>Vai trò</th>
+                    <th>Ngày tham gia</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="member in paginatedMembers" :key="member.id">
+                    <td>
+                      <div class="member-cell">
+                        <div class="avatar-sm" :style="{ background: getAvatarColor(member.displayName) }">
+                          {{ member.displayName?.charAt(0)?.toUpperCase() || '?' }}
+                        </div>
+                        <span class="font-medium">{{ member.displayName }}</span>
                       </div>
-                      <span class="font-medium">{{ member.displayName }}</span>
-                    </div>
-                  </td>
-                  <td class="text-secondary">{{ member.email || '—' }}</td>
-                  <td>
-                    <select
-                      :value="getRoleValue(member.role)"
-                      @change="handleUpdateRole(member.id, $event.target.value)"
-                      class="role-select"
-                    >
-                      <option value="0">Owner</option>
-                      <option value="1">Admin</option>
-                      <option value="2">Member</option>
-                      <option value="3">Viewer</option>
-                    </select>
-                  </td>
-                  <td class="text-secondary text-sm">{{ formatDate(member.joinedAt) }}</td>
-                  <td>
-                    <button class="icon-btn-sm danger" @click="handleRemoveMember(member.id)" title="Xóa">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                    </td>
+                    <td class="text-secondary">{{ member.email || '—' }}</td>
+                    <td>
+                      <select
+                        :value="getRoleValue(member.role)"
+                        @change="handleUpdateRole(member.id, $event.target.value)"
+                        class="role-select"
+                      >
+                        <option value="0">Owner</option>
+                        <option value="1">Admin</option>
+                        <option value="2">Member</option>
+                        <option value="3">Viewer</option>
+                      </select>
+                    </td>
+                    <td class="text-secondary text-sm">{{ formatDate(member.joinedAt) }}</td>
+                    <td>
+                      <button class="icon-btn-sm danger" @click="handleRemoveMember(member.id)" title="Xóa">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <BasePagination
+              v-model:currentPage="currentMembersPage"
+              :totalItems="members.length"
+              :itemsPerPage="membersPerPage"
+            />
+          </template>
           <EmptyState v-else title="Chưa có thành viên" description="Thêm thành viên vào dự án để bắt đầu phân công." />
         </div>
 
@@ -387,6 +394,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import ActivityLogList from '../components/common/ActivityLogList.vue'
 import ProjectAnalytics from '../components/project/ProjectAnalytics.vue'
+import BasePagination from '../components/common/BasePagination.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -398,6 +406,19 @@ const members = ref([])
 const sprints = ref([])
 const milestones = ref([])
 const activeTab = ref('members')
+
+const currentMembersPage = ref(1)
+const membersPerPage = ref(5)
+
+const paginatedMembers = computed(() => {
+  const totalPages = Math.ceil(members.value.length / membersPerPage.value)
+  if (totalPages > 0 && currentMembersPage.value > totalPages) {
+    currentMembersPage.value = totalPages
+  }
+  const start = (currentMembersPage.value - 1) * membersPerPage.value
+  const end = start + membersPerPage.value
+  return members.value.slice(start, end)
+})
 
 // Modals
 const showEditModal = ref(false)
@@ -524,6 +545,7 @@ function isDueSoon(dateStr) {
 
 async function loadProjectData() {
   loading.value = true
+  currentMembersPage.value = 1
   try {
     const res = await projectStore.loadProject(projectId.value)
     project.value = res
