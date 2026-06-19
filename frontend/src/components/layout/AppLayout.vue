@@ -1,5 +1,12 @@
 <template>
   <div class="app-layout">
+    <!-- Floating 3D Backdrop Blobs -->
+    <div class="blob-container">
+      <div class="blob bg-blob-1"></div>
+      <div class="blob bg-blob-2"></div>
+      <div class="blob bg-blob-3"></div>
+    </div>
+
     <AppSidebar :collapsed="sidebarCollapsed" />
     <div class="main-wrapper">
       <AppHeader @toggle-sidebar="sidebarCollapsed = !sidebarCollapsed" />
@@ -50,7 +57,7 @@ onBeforeUnmount(() => {
 
 .main-wrapper {
   flex: 1;
-  margin-left: var(--sidebar-width);
+  margin-left: calc(var(--sidebar-width) + 32px);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -80,5 +87,51 @@ onBeforeUnmount(() => {
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 55;
+}
+
+/* Background Blobs styling */
+.blob-container {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.08;
+  mix-blend-mode: multiply;
+}
+
+[data-theme='dark'] .blob {
+  opacity: 0.12;
+  mix-blend-mode: screen;
+}
+
+.blob.bg-blob-1 {
+  top: 10%;
+  left: 20%;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, #6366f1, #3b82f6);
+}
+
+.blob.bg-blob-2 {
+  bottom: 10%;
+  right: 15%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, #a855f7, #ec4899);
+}
+
+.blob.bg-blob-3 {
+  top: 45%;
+  left: 55%;
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, #0ea5e9, #10b981);
 }
 </style>

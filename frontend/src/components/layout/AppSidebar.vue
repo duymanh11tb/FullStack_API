@@ -112,11 +112,14 @@ function isActive(path) {
 <style scoped>
 .app-sidebar {
   width: var(--sidebar-width);
-  height: 100vh;
+  height: calc(100vh - 32px);
+  margin: 16px;
   background: var(--sidebar-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  border-right: 1px solid var(--glass-border);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-3d-card);
+  border-radius: var(--radius-xl);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -128,6 +131,11 @@ function isActive(path) {
 
 @media (max-width: 768px) {
   .app-sidebar {
+    height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    border-right: 1px solid var(--glass-border);
     transform: translateX(0);
   }
   .app-sidebar.collapsed {
@@ -201,8 +209,9 @@ function isActive(path) {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   transition: all var(--transition-fast);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   position: relative;
+  border: 1px solid transparent;
 }
 
 .nav-item:hover {
@@ -212,20 +221,28 @@ function isActive(path) {
 }
 
 .nav-item.active {
-  background: var(--sidebar-active);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.25) 0%, rgba(37, 99, 235, 0.08) 100%);
   color: var(--sidebar-text-active);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .nav-item.active::before {
   content: '';
   position: absolute;
-  left: 0;
-  top: 6px;
-  bottom: 6px;
-  width: 3px;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
   background: var(--sidebar-active-border);
-  border-radius: 0 2px 2px 0;
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 8px var(--sidebar-active-border);
+}
+
+.nav-item.active span {
+  padding-left: var(--space-1);
 }
 
 .nav-badge {

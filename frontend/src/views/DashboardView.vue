@@ -9,45 +9,45 @@
 
     <!-- Stats Grid -->
     <div class="stats-grid">
-      <div class="stat-card glass-panel" @click="$router.push('/projects')">
-        <div class="stat-icon icon-blue">
+      <div class="stat-card glass-panel tilt-card glossy-reflection" @mousemove="onMouseMove" @mouseleave="onMouseLeave" @click="$router.push('/projects')">
+        <div class="stat-icon icon-blue popout-3d">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
           </svg>
         </div>
-        <div class="stat-content">
+        <div class="stat-content popout-3d">
           <span class="stat-value">{{ projectStore.projectCount }}</span>
           <span class="stat-label">Tổng số dự án</span>
         </div>
       </div>
 
-      <div class="stat-card glass-panel" @click="$router.push('/projects')">
-        <div class="stat-icon icon-emerald">
+      <div class="stat-card glass-panel tilt-card glossy-reflection" @mousemove="onMouseMove" @mouseleave="onMouseLeave" @click="$router.push('/projects')">
+        <div class="stat-icon icon-emerald popout-3d">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
-        <div class="stat-content">
+        <div class="stat-content popout-3d">
           <span class="stat-value text-emerald">{{ activeCount }}</span>
           <span class="stat-label">Dự án hoạt động</span>
         </div>
       </div>
 
-      <div class="stat-card glass-panel" @click="$router.push('/notifications')">
-        <div class="stat-icon icon-amber">
+      <div class="stat-card glass-panel tilt-card glossy-reflection" @mousemove="onMouseMove" @mouseleave="onMouseLeave" @click="$router.push('/notifications')">
+        <div class="stat-icon icon-amber popout-3d">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
         </div>
-        <div class="stat-content">
+        <div class="stat-content popout-3d">
           <span class="stat-value text-amber">{{ notifStore.unreadCount }}</span>
           <span class="stat-label">Thông báo mới</span>
         </div>
       </div>
 
-      <div class="stat-card glass-panel">
-        <div class="stat-icon icon-violet">
+      <div class="stat-card glass-panel tilt-card glossy-reflection" @mousemove="onMouseMove" @mouseleave="onMouseLeave">
+        <div class="stat-icon icon-violet popout-3d">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
             <circle cx="9" cy="7" r="4" />
@@ -55,7 +55,7 @@
             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
         </div>
-        <div class="stat-content">
+        <div class="stat-content popout-3d">
           <span class="stat-value text-violet">{{ totalMembers }}</span>
           <span class="stat-label">Thành viên đội</span>
         </div>
@@ -84,18 +84,20 @@
           <div
             v-for="project in recentProjects"
             :key="project.id"
-            class="project-card"
+            class="project-card tilt-card glossy-reflection"
+            @mousemove="onMouseMove"
+            @mouseleave="onMouseLeave"
             @click="$router.push(`/projects/${project.id}`)"
           >
-            <div class="project-card-header">
+            <div class="project-card-header popout-3d">
               <div class="project-indicator" :style="{ background: project.color || '#2563EB' }"></div>
               <StatusBadge :status="project.status" />
             </div>
             
-            <h3 class="project-name">{{ project.name }}</h3>
-            <p class="project-desc">{{ project.description || 'Không có mô tả chi tiết cho dự án này.' }}</p>
+            <h3 class="project-name popout-3d">{{ project.name }}</h3>
+            <p class="project-desc popout-3d">{{ project.description || 'Không có mô tả chi tiết cho dự án này.' }}</p>
             
-            <div class="project-card-footer">
+            <div class="project-card-footer popout-3d">
               <div class="meta-item" title="Thành viên">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -156,6 +158,30 @@ const activeCount = computed(() =>
 const totalMembers = computed(() =>
   projectStore.projects.reduce((sum, p) => sum + (p.memberCount || 0), 0)
 )
+
+function onMouseMove(e) {
+  const card = e.currentTarget
+  const rect = card.getBoundingClientRect()
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+  const xc = rect.width / 2
+  const yc = rect.height / 2
+  const dx = x - xc
+  const dy = y - yc
+  
+  // 3D rotation angle limits (e.g. max 8 degrees)
+  const rx = -(dy / yc) * 8
+  const ry = (dx / xc) * 8
+  
+  card.style.setProperty('--rx', `${rx}deg`)
+  card.style.setProperty('--ry', `${ry}deg`)
+}
+
+function onMouseLeave(e) {
+  const card = e.currentTarget
+  card.style.setProperty('--rx', '0deg')
+  card.style.setProperty('--ry', '0deg')
+}
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'

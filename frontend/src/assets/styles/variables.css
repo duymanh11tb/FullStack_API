@@ -111,6 +111,14 @@
   --status-review: #d97706;
   --status-done: #059669;
   --status-cancelled: #e11d48;
+
+  /* 3D Shadows and Gradients */
+  --shadow-3d-card: 0 15px 35px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.75), inset 0 -1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-3d-glow: 0 20px 40px rgba(59, 130, 246, 0.16), 0 0 15px rgba(59, 130, 246, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --gradient-3d-blue: linear-gradient(135deg, #60a5fa 0%, #2563eb 50%, #1d4ed8 100%);
+  --gradient-3d-green: linear-gradient(135deg, #34d399 0%, #059669 50%, #047857 100%);
+  --gradient-3d-purple: linear-gradient(135deg, #a78bfa 0%, #7c3aed 50%, #5b21b6 100%);
+  --gradient-3d-orange: linear-gradient(135deg, #fbbf24 0%, #d97706 50%, #b45309 100%);
 }
 
 [data-theme='dark'] {
@@ -145,4 +153,8 @@
   --shadow-lg: 0 18px 40px rgba(0, 0, 0, 0.40);
   --shadow-xl: 0 28px 56px rgba(0, 0, 0, 0.48);
   --shadow-glass: 0 18px 42px rgba(0, 0, 0, 0.34);
+
+  /* 3D Shadows in Dark Mode */
+  --shadow-3d-card: 0 20px 45px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-3d-glow: 0 24px 50px rgba(37, 99, 235, 0.28), 0 0 20px rgba(37, 99, 235, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }

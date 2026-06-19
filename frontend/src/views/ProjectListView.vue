@@ -34,21 +34,23 @@
       <div
         v-for="project in projectStore.projects"
         :key="project.id"
-        class="project-card glass-panel"
+        class="project-card glass-panel tilt-card glossy-reflection"
         :style="{ borderTop: `4px solid ${project.color || '#2563EB'}` }"
+        @mousemove="onMouseMove"
+        @mouseleave="onMouseLeave"
         @click="$router.push(`/projects/${project.id}`)"
       >
-        <div class="card-header">
+        <div class="card-header popout-3d">
           <div class="project-icon" :style="{ background: project.color || '#2563EB' }">
             {{ project.name.charAt(0).toUpperCase() }}
           </div>
           <StatusBadge :status="project.status" />
         </div>
 
-        <h3 class="project-name">{{ project.name }}</h3>
-        <p class="project-desc">{{ project.description || 'Không có mô tả cho dự án này.' }}</p>
+        <h3 class="project-name popout-3d">{{ project.name }}</h3>
+        <p class="project-desc popout-3d">{{ project.description || 'Không có mô tả cho dự án này.' }}</p>
 
-        <div class="card-footer">
+        <div class="card-footer popout-3d">
           <div class="meta-row">
             <span class="meta-item" title="Thành viên">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -158,6 +160,30 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('vi-VN', {
     day: '2-digit', month: '2-digit', year: 'numeric'
   })
+}
+
+function onMouseMove(e) {
+  const card = e.currentTarget
+  const rect = card.getBoundingClientRect()
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+  const xc = rect.width / 2
+  const yc = rect.height / 2
+  const dx = x - xc
+  const dy = y - yc
+  
+  // 3D rotation angle limits (e.g. max 8 degrees)
+  const rx = -(dy / yc) * 8
+  const ry = (dx / xc) * 8
+  
+  card.style.setProperty('--rx', `${rx}deg`)
+  card.style.setProperty('--ry', `${ry}deg`)
+}
+
+function onMouseLeave(e) {
+  const card = e.currentTarget
+  card.style.setProperty('--rx', '0deg')
+  card.style.setProperty('--ry', '0deg')
 }
 
 function loadData() {

@@ -116,3 +116,103 @@ button {
   animation: shimmer 1.5s infinite;
 }
 
+/* 3D Glass Card and Tilt styles */
+.tilt-card {
+  position: relative;
+  transform-style: preserve-3d;
+  transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(0);
+  transition: transform 0.15s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s ease;
+  box-shadow: var(--shadow-3d-card);
+  border: 1px solid var(--glass-border);
+}
+
+.tilt-card:hover {
+  transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(12px);
+  box-shadow: var(--shadow-3d-glow);
+}
+
+/* Inner elements 3D Popout */
+.tilt-card .popout-3d {
+  transform: translateZ(25px);
+  transition: transform 0.15s ease;
+}
+
+/* 3D glossy reflection shine */
+.glossy-reflection {
+  position: relative;
+  overflow: hidden;
+}
+
+.glossy-reflection::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.15) 30%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.15) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-25deg);
+  transition: none;
+  z-index: 10;
+  pointer-events: none;
+}
+
+[data-theme='dark'] .glossy-reflection::before {
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.05) 30%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.05) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.glossy-reflection:hover::before {
+  animation: shine 0.75s ease-in-out forwards;
+}
+
+@keyframes shine {
+  100% {
+    left: 125%;
+  }
+}
+
+/* Background blob animations */
+@keyframes drift-blob-1 {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(45px, -65px) scale(1.18); }
+  66% { transform: translate(-35px, 25px) scale(0.85); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes drift-blob-2 {
+  0% { transform: translate(0px, 0px) scale(1.1); }
+  33% { transform: translate(-55px, 45px) scale(0.85); }
+  66% { transform: translate(35px, -35px) scale(1.22); }
+  100% { transform: translate(0px, 0px) scale(1.1); }
+}
+
+@keyframes drift-blob-3 {
+  0% { transform: translate(0px, 0px) scale(0.95); }
+  50% { transform: translate(35px, 45px) scale(1.15); }
+  100% { transform: translate(0px, 0px) scale(0.95); }
+}
+
+.bg-blob-1 {
+  animation: drift-blob-1 12s infinite alternate ease-in-out;
+}
+.bg-blob-2 {
+  animation: drift-blob-2 15s infinite alternate ease-in-out;
+}
+.bg-blob-3 {
+  animation: drift-blob-3 18s infinite alternate ease-in-out;
+}
+
