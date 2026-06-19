@@ -58,6 +58,7 @@ onBeforeUnmount(() => {
 .main-wrapper {
   flex: 1;
   margin-left: calc(var(--sidebar-width) + 32px);
+  width: calc(100% - var(--sidebar-width) - 32px);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -66,6 +67,7 @@ onBeforeUnmount(() => {
 @media (max-width: 768px) {
   .main-wrapper {
     margin-left: 0;
+    width: 100%;
   }
 }
 
