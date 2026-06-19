@@ -30,49 +30,58 @@
 
     <LoadingSpinner v-if="projectStore.loading" text="Đang tải danh sách dự án..." />
 
-    <div v-else-if="projectStore.projects.length > 0" class="projects-grid">
-      <div
-        v-for="project in projectStore.projects"
-        :key="project.id"
-        class="project-card glass-panel tilt-card glossy-reflection"
-        :style="{ borderTop: `4px solid ${project.color || '#2563EB'}` }"
-        @mousemove="onMouseMove"
-        @mouseleave="onMouseLeave"
-        @click="$router.push(`/projects/${project.id}`)"
-      >
-        <div class="card-header popout-3d">
-          <div class="project-icon" :style="{ background: project.color || '#2563EB' }">
-            {{ project.name.charAt(0).toUpperCase() }}
+    <div v-else-if="projectStore.projects.length > 0" class="projects-grid-container">
+      <div class="projects-grid">
+        <div
+          v-for="project in paginatedProjects"
+          :key="project.id"
+          class="project-card glass-panel tilt-card glossy-reflection"
+          :style="{ borderTop: `4px solid ${project.color || '#2563EB'}` }"
+          @mousemove="onMouseMove"
+          @mouseleave="onMouseLeave"
+          @click="$router.push(`/projects/${project.id}`)"
+        >
+          <div class="card-header popout-3d">
+            <div class="project-icon" :style="{ background: project.color || '#2563EB' }">
+              {{ project.name.charAt(0).toUpperCase() }}
+            </div>
+            <StatusBadge :status="project.status" />
           </div>
-          <StatusBadge :status="project.status" />
-        </div>
 
-        <h3 class="project-name popout-3d">{{ project.name }}</h3>
-        <p class="project-desc popout-3d">{{ project.description || 'Không có mô tả cho dự án này.' }}</p>
+          <h3 class="project-name popout-3d">{{ project.name }}</h3>
+          <p class="project-desc popout-3d">{{ project.description || 'Không có mô tả cho dự án này.' }}</p>
 
-        <div class="card-footer popout-3d">
-          <div class="meta-row">
-            <span class="meta-item" title="Thành viên">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-              </svg>
-              {{ project.memberCount || 0 }} thành viên
-            </span>
-            <span class="meta-item" title="Sprints">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              {{ project.sprintCount || 0 }} sprints
-            </span>
-          </div>
-          <div class="meta-date">
-            <span>{{ formatDate(project.startDate) }}</span>
-            <span v-if="project.endDate"> — {{ formatDate(project.endDate) }}</span>
+          <div class="card-footer popout-3d">
+            <div class="meta-row">
+              <span class="meta-item" title="Thành viên">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                </svg>
+                {{ project.memberCount || 0 }} thành viên
+              </span>
+              <span class="meta-item" title="Sprints">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                {{ project.sprintCount || 0 }} sprints
+              </span>
+            </div>
+            <div class="meta-date">
+              <span>{{ formatDate(project.startDate) }}</span>
+              <span v-if="project.endDate"> — {{ formatDate(project.endDate) }}</span>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- Reusable Pagination Component -->
+      <BasePagination
+        v-model:currentPage="currentPage"
+        :totalItems="projectStore.projects.length"
+        :itemsPerPage="itemsPerPage"
+      />
     </div>
 
     <EmptyState
@@ -136,6 +145,7 @@ import BaseModal from '../components/common/BaseModal.vue'
 import BaseInput from '../components/common/BaseInput.vue'
 import LoadingSpinner from '../components/common/LoadingSpinner.vue'
 import EmptyState from '../components/common/EmptyState.vue'
+import BasePagination from '../components/common/BasePagination.vue'
 
 const projectStore = useProjectStore()
 const authStore = useAuthStore()
@@ -144,6 +154,15 @@ const showCreateModal = ref(false)
 const creating = ref(false)
 const formError = ref('')
 const myProjects = ref(false)
+
+const currentPage = ref(1)
+const itemsPerPage = ref(6) // 6 projects per page
+
+const paginatedProjects = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return projectStore.projects.slice(start, end)
+})
 
 const colors = ['#2563EB', '#7C3AED', '#DC2626', '#D97706', '#10B981', '#0891B2', '#DB2777', '#4F46E5']
 
@@ -187,6 +206,7 @@ function onMouseLeave(e) {
 }
 
 function loadData() {
+  currentPage.value = 1
   projectStore.loadProjects(myProjects.value)
 }
 

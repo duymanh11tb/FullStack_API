@@ -37,29 +37,38 @@
 
     <LoadingSpinner v-if="notifStore.loading" text="Đang tải thông báo..." />
 
-    <div v-else-if="filteredNotifs.length > 0" class="notif-list">
-      <div
-        v-for="notif in filteredNotifs"
-        :key="notif.id"
-        class="notif-item"
-        :class="{ unread: !notif.isRead }"
-        @click="handleClick(notif)"
-      >
-        <div class="notif-icon" :class="getIconClass(notif.eventType)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-        </div>
-        <div class="notif-body">
-          <p class="notif-message">{{ notif.displayMessage || notif.message || notif.detail || 'Thông báo mới' }}</p>
-          <p v-if="notif.detail && notif.displayMessage" class="notif-detail">{{ notif.detail }}</p>
-          <span class="notif-time">{{ formatTime(notif.createdAt) }}</span>
-        </div>
-        <div class="notif-status">
-          <span v-if="!notif.isRead" class="unread-dot"></span>
+    <div v-else-if="filteredNotifs.length > 0" class="notif-list-container">
+      <div class="notif-list">
+        <div
+          v-for="notif in paginatedNotifs"
+          :key="notif.id"
+          class="notif-item"
+          :class="{ unread: !notif.isRead }"
+          @click="handleClick(notif)"
+        >
+          <div class="notif-icon" :class="getIconClass(notif.eventType)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+          </div>
+          <div class="notif-body">
+            <p class="notif-message">{{ notif.displayMessage || notif.message || notif.detail || 'Thông báo mới' }}</p>
+            <p v-if="notif.detail && notif.displayMessage" class="notif-detail">{{ notif.detail }}</p>
+            <span class="notif-time">{{ formatTime(notif.createdAt) }}</span>
+          </div>
+          <div class="notif-status">
+            <span v-if="!notif.isRead" class="unread-dot"></span>
+          </div>
         </div>
       </div>
+
+      <!-- Reusable Pagination Component -->
+      <BasePagination
+        v-model:currentPage="currentPage"
+        :totalItems="filteredNotifs.length"
+        :itemsPerPage="itemsPerPage"
+      />
     </div>
 
     <EmptyState
@@ -77,10 +86,14 @@ import { useNotificationStore } from '../stores/notifications'
 import BaseButton from '../components/common/BaseButton.vue'
 import LoadingSpinner from '../components/common/LoadingSpinner.vue'
 import EmptyState from '../components/common/EmptyState.vue'
+import BasePagination from '../components/common/BasePagination.vue'
 
 const router = useRouter()
 const notifStore = useNotificationStore()
 const filter = ref('all')
+
+const currentPage = ref(1)
+const itemsPerPage = ref(8) // 8 notifications per page
 
 const filteredNotifs = computed(() => {
   if (filter.value === 'unread') return notifStore.unreadNotifications
@@ -88,7 +101,14 @@ const filteredNotifs = computed(() => {
   return notifStore.notifications
 })
 
+const paginatedNotifs = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return filteredNotifs.value.slice(start, end)
+})
+
 function loadData() {
+  currentPage.value = 1
   if (filter.value === 'unread') {
     notifStore.loadNotifications(false)
   } else if (filter.value === 'read') {

@@ -38,7 +38,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="user in filteredUsers" :key="user.id">
+              <tr v-for="user in paginatedUsers" :key="user.id">
                 <td>
                   <div class="user-cell">
                     <div class="user-avatar" :style="{ backgroundColor: getAvatarColor(user.fullName || user.username) }">
@@ -77,6 +77,13 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Reusable Pagination Component -->
+        <BasePagination
+          v-model:currentPage="currentPage"
+          :totalItems="filteredUsers.length"
+          :itemsPerPage="itemsPerPage"
+        />
       </div>
     </div>
 
@@ -120,19 +127,27 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { getAllUsers, updateUser, deleteUser } from '../api/notifyApi'
 import BaseButton from '../components/common/BaseButton.vue'
 import BaseInput from '../components/common/BaseInput.vue'
 import BaseModal from '../components/common/BaseModal.vue'
 import LoadingSpinner from '../components/common/LoadingSpinner.vue'
 import EmptyState from '../components/common/EmptyState.vue'
+import BasePagination from '../components/common/BasePagination.vue'
 
 const users = ref([])
 const loading = ref(true)
 const filterText = ref('')
 const showEditModal = ref(false)
 const selectedUser = ref(null)
+
+const currentPage = ref(1)
+const itemsPerPage = ref(8) // 8 users per page
+
+watch(filterText, () => {
+  currentPage.value = 1
+})
 
 const editForm = reactive({
   username: '',
@@ -177,6 +192,12 @@ const filteredUsers = computed(() => {
     (u.username && u.username.toLowerCase().includes(query)) ||
     (u.email && u.email.toLowerCase().includes(query))
   )
+})
+
+const paginatedUsers = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return filteredUsers.value.slice(start, end)
 })
 
 function openEdit(user) {
