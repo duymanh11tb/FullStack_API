@@ -2,6 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using QLDA_PCCV.Domain.Notifications.Entities;
 using QLDA_PCCV.Domain.Notifications.Enums;
 using QLDA_PCCV.Infrastructure.Persistence;
+using Microsoft.AspNetCore.SignalR;
+using QLDA_PCCV.Hubs;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace QLDA_PCCV.Services;
 
@@ -14,10 +18,12 @@ public interface INotificationEventService
 public class NotificationEventService : INotificationEventService
 {
     private readonly AppDbContext _context;
+    private readonly IHubContext<NotificationHub> _hubContext;
 
-    public NotificationEventService(AppDbContext context)
+    public NotificationEventService(AppDbContext context, IHubContext<NotificationHub> hubContext)
     {
         _context = context;
+        _hubContext = hubContext;
     }
 
     public async Task<NotificationEventResult> ConsumeAsync(NotificationEventRequest request, CancellationToken cancellationToken = default)
@@ -41,10 +47,11 @@ public class NotificationEventService : INotificationEventService
 
         var message = await ResolveMessageAsync(request, notificationType, referenceId, cancellationToken);
         var now = DateTime.UtcNow;
+        var createdNotifications = new List<Notification>();
 
         foreach (var userId in recipients)
         {
-            _context.Notifications.Add(new Notification
+            var notif = new Notification
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
@@ -54,12 +61,38 @@ public class NotificationEventService : INotificationEventService
                 ReferenceType = referenceType,
                 IsRead = false,
                 CreatedAt = now
-            });
+            };
+            _context.Notifications.Add(notif);
+            createdNotifications.Add(notif);
         }
 
         AddActivityLogIfNeeded(request, notificationType, now);
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        // Push real-time notifications
+        foreach (var notif in createdNotifications)
+        {
+            try
+            {
+                await _hubContext.Clients.Group(notif.UserId.ToString()).SendAsync("ReceiveNotification", new
+                {
+                    id = notif.Id,
+                    userId = notif.UserId,
+                    type = notif.Type.ToString(),
+                    message = notif.Message,
+                    referenceId = notif.ReferenceId,
+                    referenceType = notif.ReferenceType.ToString(),
+                    isRead = notif.IsRead,
+                    createdAt = notif.CreatedAt
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error pushing real-time notification: {ex.Message}");
+            }
+        }
+
         return NotificationEventResult.Success(recipients.Count, "Event consumed and notifications created.");
     }
 
@@ -87,9 +120,11 @@ public class NotificationEventService : INotificationEventService
             cancellationToken);
 
         var now = DateTime.UtcNow;
+        var createdNotifs = new List<Notification>();
+
         foreach (var user in mentionedUsers.Where(u => enabledUserIds.Contains(u.Id)))
         {
-            _context.Notifications.Add(new Notification
+            var notif = new Notification
             {
                 Id = Guid.NewGuid(),
                 UserId = user.Id,
@@ -99,7 +134,33 @@ public class NotificationEventService : INotificationEventService
                 ReferenceType = ReferenceType.Task,
                 IsRead = false,
                 CreatedAt = now
-            });
+            };
+            _context.Notifications.Add(notif);
+            createdNotifs.Add(notif);
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        foreach (var notif in createdNotifs)
+        {
+            try
+            {
+                await _hubContext.Clients.Group(notif.UserId.ToString()).SendAsync("ReceiveNotification", new
+                {
+                    id = notif.Id,
+                    userId = notif.UserId,
+                    type = notif.Type.ToString(),
+                    message = notif.Message,
+                    referenceId = notif.ReferenceId,
+                    referenceType = notif.ReferenceType.ToString(),
+                    isRead = notif.IsRead,
+                    createdAt = notif.CreatedAt
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error pushing real-time notification: {ex.Message}");
+            }
         }
 
         return enabledUserIds.Count;

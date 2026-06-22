@@ -28,7 +28,7 @@
       </div>
     </div>
 
-    <LoadingSpinner v-if="projectStore.loading" text="Đang tải danh sách dự án..." />
+    <SkeletonLoader v-if="projectStore.loading" type="card" :count="6" />
 
     <div v-else-if="projectStore.projects.length > 0" class="projects-grid-container">
       <div class="projects-grid">
@@ -146,6 +146,7 @@ import BaseInput from '../components/common/BaseInput.vue'
 import LoadingSpinner from '../components/common/LoadingSpinner.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import BasePagination from '../components/common/BasePagination.vue'
+import SkeletonLoader from '../components/common/SkeletonLoader.vue'
 
 const projectStore = useProjectStore()
 const authStore = useAuthStore()

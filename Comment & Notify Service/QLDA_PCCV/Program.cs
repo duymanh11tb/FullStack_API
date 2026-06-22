@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using QLDA_PCCV.Infrastructure.Persistence;
 using QLDA_PCCV.Services;
+using QLDA_PCCV.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
             ClockSkew = TimeSpan.FromMinutes(2)
         };
+
+        // Authenticate SignalR connections using access_token query parameter
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hub/notifications"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddControllers();
@@ -35,13 +51,15 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<INotificationEventService, NotificationEventService>();
 builder.Services.AddScoped<IExternalServiceClient, ExternalServiceClient>();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -96,6 +114,7 @@ app.MapGet("/", () => Results.Redirect("/swagger"));
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHub<NotificationHub>("/hub/notifications");
 app.MapControllers();
 
 app.Run();

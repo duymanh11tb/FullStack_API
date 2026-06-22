@@ -274,6 +274,17 @@ function setDeadlineDays(days) {
   formData.value.deadline = d.toISOString().slice(0, 16);
 }
 
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 function addSubtask() {
   if (!newSubtaskTitle.value.trim()) return;
   if (!formData.value.subTasks) {
@@ -281,7 +292,7 @@ function addSubtask() {
   }
   
   formData.value.subTasks.push({
-    subTaskId: self.crypto.randomUUID ? self.crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
+    subTaskId: generateUUID(),
     title: newSubtaskTitle.value.trim(),
     isCompleted: false,
     createdAt: new Date().toISOString()
@@ -320,6 +331,7 @@ watch(() => formData.value.subTasks, (newSubTasks) => {
 
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
+    projectStore.loadProjects();
     activeTab.value = 'discussion';
     if (props.task) {
       isEdit.value = true;
@@ -366,8 +378,27 @@ const closeModal = () => {
 
 const submitForm = () => {
   const payload = { ...formData.value };
-  if (!payload.deadline) payload.deadline = null;
-  else payload.deadline = new Date(payload.deadline).toISOString();
+  
+  if (!payload.boardId) {
+    alert('Vui lòng chọn dự án!');
+    return;
+  }
+  
+  // Clean assigneeId: send null instead of "" if empty
+  if (!payload.assigneeId) {
+    payload.assigneeId = null;
+  }
+  
+  // If not edit mode (creating new task), omit taskId so the backend can generate it
+  if (!isEdit.value) {
+    delete payload.taskId;
+  }
+  
+  if (!payload.deadline) {
+    payload.deadline = null;
+  } else {
+    payload.deadline = new Date(payload.deadline).toISOString();
+  }
   
   emit('save', payload);
 };

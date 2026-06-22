@@ -9,16 +9,19 @@ export default defineConfig({
       '/proxy-project': {
         target: 'http://103.178.235.78:5001',
         changeOrigin: true,
+        ws: true,
         rewrite: (path) => path.replace(/^\/proxy-project/, '')
       },
       '/proxy-task': {
         target: 'http://103.178.235.78:5002',
         changeOrigin: true,
+        ws: true,
         rewrite: (path) => path.replace(/^\/proxy-task/, '')
       },
       '/proxy-notify': {
         target: 'http://103.178.235.78:5003',
         changeOrigin: true,
+        ws: true,
         rewrite: (path) => path.replace(/^\/proxy-notify/, '')
       }
     }

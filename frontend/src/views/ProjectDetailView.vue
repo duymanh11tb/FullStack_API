@@ -1,6 +1,6 @@
 <template>
   <div class="project-detail">
-    <LoadingSpinner v-if="loading" text="Đang tải dự án..." />
+    <SkeletonLoader v-if="loading" type="table" :count="5" />
 
     <template v-else-if="project">
       <!-- Back button + Project header -->
@@ -395,6 +395,7 @@ import EmptyState from '../components/common/EmptyState.vue'
 import ActivityLogList from '../components/common/ActivityLogList.vue'
 import ProjectAnalytics from '../components/project/ProjectAnalytics.vue'
 import BasePagination from '../components/common/BasePagination.vue'
+import SkeletonLoader from '../components/common/SkeletonLoader.vue'
 
 const route = useRoute()
 const router = useRouter()

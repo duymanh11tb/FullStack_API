@@ -112,7 +112,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useNotificationStore } from '../../stores/notifications'
@@ -211,6 +211,8 @@ function formatTime(dateStr) {
   return date.toLocaleDateString('vi-VN')
 }
 
+const userId = computed(() => authStore.user?.id || authStore.user?.Id)
+
 function handleClickOutside(e) {
   if (notifRef.value && !notifRef.value.contains(e.target)) {
     showNotifDropdown.value = false
@@ -220,16 +222,21 @@ function handleClickOutside(e) {
   }
 }
 
-let pollInterval = null
+watch(userId, (newUserId) => {
+  if (newUserId) {
+    notifStore.startSignalR(newUserId)
+  } else {
+    notifStore.stopSignalR()
+  }
+})
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   notifStore.loadNotifications()
   
-  // Polling notifications every 10 seconds for real-time updates
-  pollInterval = setInterval(() => {
-    notifStore.loadNotifications()
-  }, 10000)
+  if (userId.value) {
+    notifStore.startSignalR(userId.value)
+  }
   
   // Initialize Theme
   const savedTheme = localStorage.getItem('theme')
@@ -241,9 +248,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
-  if (pollInterval) {
-    clearInterval(pollInterval)
-  }
+  notifStore.stopSignalR()
 })
 </script>
 
