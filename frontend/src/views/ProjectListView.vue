@@ -78,7 +78,8 @@
 
       <!-- Reusable Pagination Component -->
       <BasePagination
-        v-model:currentPage="currentPage"
+        :currentPage="currentPage"
+        @update:currentPage="currentPage = $event"
         :totalItems="projectStore.projects.length"
         :itemsPerPage="itemsPerPage"
       />

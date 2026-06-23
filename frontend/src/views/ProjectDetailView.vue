@@ -129,7 +129,8 @@
               </table>
             </div>
             <BasePagination
-              v-model:currentPage="currentMembersPage"
+              :currentPage="currentMembersPage"
+              @update:currentPage="currentMembersPage = $event"
               :totalItems="members.length"
               :itemsPerPage="membersPerPage"
             />

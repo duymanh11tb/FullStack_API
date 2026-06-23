@@ -6,21 +6,29 @@
       
       <div v-else-if="comments.length > 0" class="comments-wrapper">
         <div v-for="comment in comments" :key="comment.id" class="comment-item">
-          <div class="comment-avatar">
+          <!-- Timeline point dot -->
+          <div class="timeline-dot"></div>
+          
+          <div class="comment-avatar" :style="{ background: getAvatarColor(comment.userFullName) }">
             {{ comment.userFullName?.charAt(0)?.toUpperCase() || 'U' }}
           </div>
           <div class="comment-content">
             <div class="comment-header">
               <span class="comment-author">{{ comment.userFullName }}</span>
-              <span class="comment-time">{{ formatTime(comment.createdAt) }}</span>
+              <span class="comment-time">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 4px; vertical-align: middle;">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                {{ formatTime(comment.createdAt) }}
+              </span>
             </div>
             
             <!-- Edit Root Comment -->
-            <div v-if="editingCommentId === comment.id" class="edit-comment-area">
+            <div v-if="editingCommentId === comment.id" class="edit-comment-area animate-fade">
               <textarea v-model="editingContent" class="comment-input edit-textarea" rows="2"></textarea>
               <div class="edit-actions">
-                <button class="btn-action-sm save" :disabled="!editingContent.trim()" @click="saveEdit(comment.id)">Lưu</button>
-                <button class="btn-action-sm cancel" @click="cancelEdit">Hủy</button>
+                <BaseButton size="sm" variant="secondary" @click="cancelEdit">Hủy</BaseButton>
+                <BaseButton size="sm" variant="primary" :disabled="!editingContent.trim()" @click="saveEdit(comment.id)">Lưu</BaseButton>
               </div>
             </div>
             <div v-else class="comment-body" :class="{ 'deleted': comment.isDeleted }">
@@ -32,28 +40,40 @@
             <div v-if="!comment.isDeleted" class="comment-actions">
               <button 
                 v-if="canManageComment(comment)" 
-                class="btn-action" 
+                class="btn-action-icon" 
                 @click="startEdit(comment)"
+                title="Chỉnh sửa bình luận"
               >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
                 Sửa
               </button>
               <button 
                 v-if="canManageComment(comment)" 
-                class="btn-action danger" 
+                class="btn-action-icon danger" 
                 @click="handleDelete(comment.id)"
+                title="Xóa bình luận"
               >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
                 Xóa
               </button>
               <button 
-                class="btn-action" 
+                class="btn-action-icon reply" 
                 @click="startReply(comment.id)"
+                title="Trả lời bình luận"
               >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
+                </svg>
                 Trả lời
               </button>
             </div>
 
             <!-- Reply Input Box -->
-            <div v-if="replyingToId === comment.id" class="reply-input-area">
+            <div v-if="replyingToId === comment.id" class="reply-input-area animate-fade">
               <textarea 
                 v-model="replyContent" 
                 placeholder="Trả lời bình luận..." 
@@ -61,32 +81,37 @@
                 rows="2"
               ></textarea>
               <div class="reply-actions">
-                <button class="btn-action-sm save" :disabled="!replyContent.trim() || submitting" @click="submitReply(comment.id)">Gửi</button>
-                <button class="btn-action-sm cancel" @click="cancelReply">Hủy</button>
+                <BaseButton size="sm" variant="secondary" @click="cancelReply">Hủy</BaseButton>
+                <BaseButton size="sm" variant="primary" :disabled="!replyContent.trim() || submitting" @click="submitReply(comment.id)">Gửi</BaseButton>
               </div>
             </div>
 
             <!-- Nested Replies -->
             <div v-if="comment.replies && comment.replies.length > 0" class="replies">
               <div v-for="reply in comment.replies" :key="reply.id" class="comment-item reply">
-                <div class="comment-avatar avatar-sm">
+                <div class="comment-avatar avatar-sm" :style="{ background: getAvatarColor(reply.userFullName) }">
                   {{ reply.userFullName?.charAt(0)?.toUpperCase() || 'U' }}
                 </div>
-                <div class="comment-content">
+                <div class="comment-content reply-content">
                   <div class="comment-header">
-                    <span class="comment-author">{{ reply.userFullName }}</span>
-                    <span class="comment-time">{{ formatTime(reply.createdAt) }}</span>
+                    <span class="comment-author reply-author">{{ reply.userFullName }}</span>
+                    <span class="comment-time">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 3px; vertical-align: middle;">
+                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                      {{ formatTime(reply.createdAt) }}
+                    </span>
                   </div>
                   
                   <!-- Edit Reply Comment -->
-                  <div v-if="editingCommentId === reply.id" class="edit-comment-area">
+                  <div v-if="editingCommentId === reply.id" class="edit-comment-area animate-fade">
                     <textarea v-model="editingContent" class="comment-input edit-textarea" rows="2"></textarea>
                     <div class="edit-actions">
-                      <button class="btn-action-sm save" :disabled="!editingContent.trim()" @click="saveEdit(reply.id)">Lưu</button>
-                      <button class="btn-action-sm cancel" @click="cancelEdit">Hủy</button>
+                      <BaseButton size="sm" variant="secondary" @click="cancelEdit">Hủy</BaseButton>
+                      <BaseButton size="sm" variant="primary" :disabled="!editingContent.trim()" @click="saveEdit(reply.id)">Lưu</BaseButton>
                     </div>
                   </div>
-                  <div v-else class="comment-body" :class="{ 'deleted': reply.isDeleted }">
+                  <div v-else class="comment-body text-sm" :class="{ 'deleted': reply.isDeleted }">
                     {{ reply.content }}
                     <span v-if="reply.updatedAt && !reply.isDeleted" class="edited-flag">(Đã chỉnh sửa)</span>
                   </div>
@@ -95,22 +120,31 @@
                   <div v-if="!reply.isDeleted" class="comment-actions">
                     <button 
                       v-if="canManageComment(reply)" 
-                      class="btn-action" 
+                      class="btn-action-icon" 
                       @click="startEdit(reply)"
                     >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                      </svg>
                       Sửa
                     </button>
                     <button 
                       v-if="canManageComment(reply)" 
-                      class="btn-action danger" 
+                      class="btn-action-icon danger" 
                       @click="handleDelete(reply.id)"
                     >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
                       Xóa
                     </button>
                     <button 
-                      class="btn-action" 
+                      class="btn-action-icon reply" 
                       @click="startReply(comment.id)"
                     >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
+                      </svg>
                       Trả lời
                     </button>
                   </div>
@@ -121,53 +155,66 @@
         </div>
       </div>
 
-      <div v-else class="empty-comments">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
-        <p>Chưa có thảo luận nào. Hãy là người đầu tiên bình luận!</p>
+      <div v-else class="empty-comments animate-fade">
+        <div class="empty-comment-icon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        </div>
+        <p class="empty-text-main">Chưa có cuộc thảo luận nào</p>
+        <p class="empty-text-sub">Hãy là người đầu tiên bình luận và tag đồng nghiệp bằng @</p>
       </div>
     </div>
 
     <!-- Input Box -->
     <div class="comment-input-area">
       <!-- Mentions Dropdown -->
-      <div v-if="showMentionsDropdown && filteredMembers.length > 0" class="mentions-dropdown">
-        <div
-          v-for="(member, index) in filteredMembers"
-          :key="member.userId || member.email"
-          :class="['mention-item', { active: index === mentionSelectedIndex }]"
-          @click="selectMention(member)"
-        >
-          <div class="mention-avatar" :style="{ background: getAvatarColor(member.displayName) }">
-            {{ member.displayName.charAt(0).toUpperCase() }}
-          </div>
-          <div class="mention-info">
-            <span class="mention-name">{{ member.displayName }}</span>
-            <span class="mention-username">@{{ getMemberUsername(member) }}</span>
+      <transition name="fade">
+        <div v-if="showMentionsDropdown && filteredMembers.length > 0" class="mentions-dropdown">
+          <div
+            v-for="(member, index) in filteredMembers"
+            :key="member.userId || member.email"
+            :class="['mention-item', { active: index === mentionSelectedIndex }]"
+            @click="selectMention(member)"
+          >
+            <div class="mention-avatar" :style="{ background: getAvatarColor(member.displayName) }">
+              {{ member.displayName.charAt(0).toUpperCase() }}
+            </div>
+            <div class="mention-info">
+              <span class="mention-name">{{ member.displayName }}</span>
+              <span class="mention-username">@{{ getMemberUsername(member) }}</span>
+            </div>
           </div>
         </div>
-      </div>
+      </transition>
 
-      <textarea
-        v-model="newComment"
-        placeholder="Viết bình luận..."
-        rows="3"
-        class="comment-input"
-        @keydown="handleKeyDown"
-        @input="handleInput"
-        @click="showMentionsDropdown = false"
-        ref="textareaRef"
-      ></textarea>
-      <div class="input-actions">
-        <span class="help-text">Nhấn Enter để gửi, Shift + Enter để xuống dòng</span>
-        <BaseButton
-          variant="primary"
-          :disabled="!newComment.trim() || submitting"
-          @click="submitComment"
-        >
-          Gửi bình luận
-        </BaseButton>
+      <div class="input-wrapper">
+        <textarea
+          v-model="newComment"
+          placeholder="Viết bình luận hoặc tag thành viên bằng @..."
+          rows="3"
+          class="comment-input main-input"
+          @keydown="handleKeyDown"
+          @input="handleInput"
+          @click="showMentionsDropdown = false"
+          ref="textareaRef"
+        ></textarea>
+        <div class="input-actions">
+          <span class="help-text">
+            💡 <strong>Shift + Enter</strong> để xuống dòng. Nhấn <strong>Enter</strong> để gửi nhanh.
+          </span>
+          <BaseButton
+            variant="primary"
+            :disabled="!newComment.trim() || submitting"
+            @click="submitComment"
+            class="send-btn"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 6px;">
+              <line x1="22" y1="2" x2="11" y2="13"/><polyline points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            Gửi bình luận
+          </BaseButton>
+        </div>
       </div>
     </div>
   </div>
@@ -491,139 +538,236 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 400px;
-  max-height: 600px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-bg);
+  min-height: 460px;
+  max-height: 620px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-glass);
   overflow: hidden;
+  position: relative;
 }
 
 .comment-list {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-4);
-  background: var(--color-bg-secondary);
+  padding: var(--space-6);
+  background: transparent;
+  position: relative;
 }
 
+/* Glass timeline line */
 .comments-wrapper {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: 24px;
+  position: relative;
+}
+
+.comments-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 19px;
+  width: 2px;
+  background: var(--border-color);
+  z-index: 0;
+  opacity: 0.7;
 }
 
 .comment-item {
   display: flex;
-  gap: var(--space-3);
+  gap: var(--space-4);
+  position: relative;
+  z-index: 2;
 }
 
-.comment-item.reply {
-  margin-top: var(--space-3);
-  padding-left: var(--space-4);
-  border-left: 2px solid var(--color-border);
+.timeline-dot {
+  position: absolute;
+  left: 17px;
+  top: 14px;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  box-shadow: 0 0 6px var(--color-primary);
+  z-index: 3;
 }
 
 .comment-avatar {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-full);
-  background: var(--color-primary);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-extrabold);
   font-size: var(--font-size-sm);
   flex-shrink: 0;
+  border: 2.5px solid var(--bg-white-to-card);
+  box-shadow: var(--shadow-sm);
+  z-index: 2;
+  transition: transform var(--transition-fast);
+}
+
+.comment-item:hover .comment-avatar {
+  transform: scale(1.06);
 }
 
 .avatar-sm {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   font-size: var(--font-size-xs);
+  border-width: 2px;
 }
 
 .comment-content {
   flex: 1;
-  background: var(--bg-white-to-card);
-  padding: var(--space-3) var(--space-4);
+  background: var(--glass-bg);
+  padding: var(--space-4) var(--space-5);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-xs);
+  transition: all var(--transition-base);
+}
+
+.comment-item:hover .comment-content {
+  background: var(--bg-white-to-card);
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.reply-content {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme='dark'] .reply-content {
+  background: rgba(15, 23, 42, 0.3);
 }
 
 .comment-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: var(--space-1);
+  align-items: center;
+  margin-bottom: 6px;
 }
 
 .comment-author {
-  font-weight: var(--font-weight-semibold);
+  font-weight: 700;
   font-size: var(--font-size-sm);
   color: var(--color-text-primary);
 }
 
+.reply-author {
+  color: var(--color-primary);
+}
+
 .comment-time {
-  font-size: var(--font-size-xs);
+  font-size: 11px;
   color: var(--color-text-tertiary);
+  display: flex;
+  align-items: center;
 }
 
 .comment-body {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  line-height: var(--line-height-relaxed);
+  line-height: 1.6;
   white-space: pre-wrap;
+}
+
+.text-sm {
+  font-size: var(--font-size-xs);
 }
 
 .comment-body.deleted {
   font-style: italic;
   color: var(--color-text-tertiary);
+  opacity: 0.8;
 }
 
 .comment-actions {
   display: flex;
-  gap: var(--space-3);
-  margin-top: var(--space-2);
+  gap: 16px;
+  margin-top: 10px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
 }
 
-.btn-action {
+.comment-content:hover .comment-actions {
+  opacity: 1;
+}
+
+.btn-action-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: none;
   border: none;
-  color: var(--color-primary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-weight: 700;
   cursor: pointer;
-  padding: 0;
-  transition: color var(--transition-fast);
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
 }
 
-.btn-action:hover {
-  text-decoration: underline;
-  color: var(--color-primary-hover);
+.btn-action-icon:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
-.btn-action.danger {
+.btn-action-icon.danger:hover {
+  background: var(--color-danger-light);
   color: var(--color-danger);
 }
 
-.btn-action.danger:hover {
-  color: #be123c;
+.btn-action-icon.reply:hover {
+  background: var(--color-success-light);
+  color: var(--color-success);
 }
 
 .edited-flag {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--color-text-tertiary);
   margin-left: var(--space-2);
   font-style: italic;
 }
 
-.edit-comment-area, .reply-input-area {
-  margin-top: var(--space-2);
+.comment-item.reply {
+  margin-top: var(--space-3);
+  position: relative;
+}
+
+.comment-item.reply::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 14px;
+  width: 14px;
+  height: 2px;
+  background: var(--border-color);
+}
+
+.replies {
+  margin-top: var(--space-3);
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
+}
+
+.edit-comment-area, .reply-input-area {
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .edit-textarea, .reply-textarea {
@@ -634,41 +778,7 @@ onMounted(() => {
 .edit-actions, .reply-actions {
   display: flex;
   justify-content: flex-end;
-  gap: var(--space-2);
-}
-
-.btn-action-sm {
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: var(--font-weight-semibold);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  cursor: pointer;
-  background: var(--color-white);
-  color: var(--color-text-secondary);
-  transition: all var(--transition-fast);
-}
-
-.btn-action-sm:hover:not(:disabled) {
-  background: var(--color-bg);
-  color: var(--color-text-primary);
-}
-
-.btn-action-sm.save {
-  background: var(--color-primary);
-  color: white;
-  border-color: var(--color-primary);
-}
-
-.btn-action-sm.save:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-  border-color: var(--color-primary-hover);
-  color: white;
-}
-
-.btn-action-sm:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  gap: 8px;
 }
 
 .empty-comments {
@@ -676,74 +786,115 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  height: 240px;
   color: var(--color-text-tertiary);
+  text-align: center;
 }
 
-.empty-comments svg {
-  margin-bottom: var(--space-2);
-  opacity: 0.5;
+.empty-comment-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-4);
+  color: var(--text-muted);
+}
+
+.empty-text-main {
+  font-weight: 700;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  margin-bottom: 4px;
+}
+
+.empty-text-sub {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  max-width: 250px;
 }
 
 .comment-input-area {
-  padding: var(--space-4);
+  padding: var(--space-5) var(--space-6);
   background: var(--bg-white-to-card);
   border-top: 1px solid var(--color-border);
   position: relative;
 }
 
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
 .comment-input {
   width: 100%;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: var(--space-3);
+  padding: 12px 16px;
   font-size: var(--font-size-sm);
   font-family: inherit;
   resize: none;
-  transition: border-color var(--transition-fast);
+  background: var(--color-bg);
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
 }
 
 .comment-input:focus {
   outline: none;
   border-color: var(--color-primary);
+  background: var(--bg-white-to-card);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 .input-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: var(--space-2);
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .help-text {
-  font-size: var(--font-size-xs);
+  font-size: 11px;
   color: var(--color-text-tertiary);
+}
+
+.send-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
 }
 
 /* Mentions Dropdown Styling */
 .mentions-dropdown {
   position: absolute;
-  bottom: calc(100% - 4px);
-  left: var(--space-4);
-  width: calc(100% - (var(--space-4) * 2));
+  bottom: calc(100% - 8px);
+  left: var(--space-6);
+  width: calc(100% - (var(--space-6) * 2));
   max-width: 320px;
-  background: var(--bg-white-to-card);
-  border: 1px solid var(--color-border);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-glass);
   max-height: 200px;
   overflow-y: auto;
   z-index: 100;
   display: flex;
   flex-direction: column;
-  padding: 4px;
+  padding: 6px;
 }
 
 .mention-item {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  padding: 8px 12px;
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -764,6 +915,7 @@ onMounted(() => {
   font-weight: bold;
   font-size: 12px;
   flex-shrink: 0;
+  box-shadow: var(--shadow-xs);
 }
 
 .mention-info {
@@ -774,7 +926,7 @@ onMounted(() => {
 
 .mention-name {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -784,5 +936,14 @@ onMounted(() => {
 .mention-username {
   font-size: 11px;
   color: var(--color-text-tertiary);
+}
+
+.animate-fade {
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
