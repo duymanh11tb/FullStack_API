@@ -6,9 +6,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.SignalR;
 using QLDA_PCCV.Domain.Notifications.Entities;
 using QLDA_PCCV.Domain.Notifications.Enums;
 using QLDA_PCCV.Infrastructure.Persistence;
+using QLDA_PCCV.Hubs;
 
 namespace QLDA_PCCV.Controllers;
 
@@ -18,11 +20,13 @@ public class AuthController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly IConfiguration _configuration;
+    private readonly IHubContext<NotificationHub> _hubContext;
 
-    public AuthController(AppDbContext context, IConfiguration configuration)
+    public AuthController(AppDbContext context, IConfiguration configuration, IHubContext<NotificationHub> hubContext)
     {
         _context = context;
         _configuration = configuration;
+        _hubContext = hubContext;
     }
 
     [HttpPost("register")]
@@ -316,6 +320,9 @@ public class AuthController : ControllerBase
             return BadRequest(new { Message = "Email already exists." });
         }
 
+        var oldRole = user.Role;
+        var isRoleChanged = oldRole != request.Role;
+
         user.Username = request.Username;
         user.Email = request.Email;
         user.FullName = request.FullName;
@@ -329,6 +336,43 @@ public class AuthController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
+
+        if (isRoleChanged)
+        {
+            var notification = new Notification
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                Type = NotificationType.MemberAdded,
+                Message = $"Tài khoản của bạn đã được phân quyền thành {request.Role} bởi Admin.",
+                ReferenceId = user.Id,
+                ReferenceType = ReferenceType.Project,
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            };
+            
+            _context.Notifications.Add(notification);
+            await _context.SaveChangesAsync();
+            
+            try
+            {
+                await _hubContext.Clients.Group(user.Id.ToString()).SendAsync("ReceiveNotification", new
+                {
+                    id = notification.Id,
+                    userId = notification.UserId,
+                    type = notification.Type.ToString(),
+                    message = notification.Message,
+                    referenceId = notification.ReferenceId,
+                    referenceType = notification.ReferenceType.ToString(),
+                    isRead = notification.IsRead,
+                    createdAt = notification.CreatedAt
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error pushing real-time notification: {ex.Message}");
+            }
+        }
 
         return Ok(new { Message = "User updated successfully." });
     }

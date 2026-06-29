@@ -30,7 +30,7 @@ export const useNotificationStore = defineStore('notifications', {
       try {
         const res = await fetchNotifications(isRead)
         const notifs = res.data.data || res.data || []
-        
+
         const promises = notifs.map(async (n) => {
           let enhancedMessage = n.message || 'Bạn có thông báo mới'
           try {
@@ -51,7 +51,7 @@ export const useNotificationStore = defineStore('notifications', {
           }
           return { ...n, displayMessage: enhancedMessage }
         })
-        
+
         this.notifications = await Promise.all(promises)
       } catch (err) {
         this.error = err.response?.data?.message || 'Không thể tải thông báo'
@@ -86,7 +86,7 @@ export const useNotificationStore = defineStore('notifications', {
       try {
         const signalR = await import('@microsoft/signalr')
         const token = localStorage.getItem('token')
-        
+
         const connection = new signalR.HubConnectionBuilder()
           .withUrl(`/proxy-notify/hub/notifications?userId=${userId}`, {
             accessTokenFactory: () => token || ''
@@ -99,7 +99,7 @@ export const useNotificationStore = defineStore('notifications', {
           try {
             const typeStr = notif.type
             const isTaskType = typeStr === 'task.assigned' || typeStr === 'task.status.changed' || typeStr === 'comment.mention' || typeStr === 'CommentMention' || typeStr === 'TaskAssigned' || typeStr === 'TaskStatusChanged'
-            
+
             if (isTaskType) {
               const taskRes = await taskApi.getTask(notif.referenceId)
               const title = taskRes.data?.data?.title || taskRes.data?.title || notif.referenceId
@@ -107,9 +107,13 @@ export const useNotificationStore = defineStore('notifications', {
               if (typeStr === 'task.status.changed' || typeStr === 'TaskStatusChanged') enhancedMessage = `Trạng thái của công việc '${title}' đã thay đổi`
               if (typeStr === 'comment.mention' || typeStr === 'CommentMention') enhancedMessage = `Bạn đã được nhắc đến trong bình luận ở công việc '${title}'`
             } else if (typeStr === 'member.added' || typeStr === 'MemberAdded') {
-              const projRes = await getProject(notif.referenceId)
-              const name = projRes.data?.data?.name || projRes.data?.name || notif.referenceId
-              enhancedMessage = `Bạn đã được thêm vào dự án '${name}'`
+              if (notif.message && notif.message.includes('phân quyền')) {
+                enhancedMessage = notif.message
+              } else {
+                const projRes = await getProject(notif.referenceId)
+                const name = projRes.data?.data?.name || projRes.data?.name || notif.referenceId
+                enhancedMessage = `Bạn đã được thêm vào dự án '${name}'`
+              }
             }
           } catch (err) {
             console.error('SignalR enhancement error:', err)

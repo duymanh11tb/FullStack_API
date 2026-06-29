@@ -386,7 +386,7 @@ import {
   getSprints, createSprint, updateSprint, startSprint, completeSprint,
   getMilestones, createMilestone, updateMilestone, deleteMilestone
 } from '../api/projectApi'
-import { searchUsers } from '../api/notifyApi'
+import { searchUsers, publishEvent } from '../api/notifyApi'
 import StatusBadge from '../components/common/StatusBadge.vue'
 import BaseButton from '../components/common/BaseButton.vue'
 import BaseModal from '../components/common/BaseModal.vue'
@@ -618,7 +618,26 @@ async function handleDelete() {
 // Members
 async function handleAddMember() {
   try {
+    const targetUserId = memberForm.userId
     await addMember(projectId.value, { ...memberForm })
+
+    // Send member.added notification
+    try {
+      const userJson = localStorage.getItem('user')
+      const currentUser = userJson ? JSON.parse(userJson) : null
+      await publishEvent({
+        eventType: 'member.added',
+        projectId: projectId.value,
+        referenceId: projectId.value,
+        actorUserId: currentUser?.id || currentUser?.Id,
+        targetUserId: targetUserId,
+        recipientUserIds: [targetUserId],
+        message: `Bạn đã được mời tham gia dự án '${project.value?.name || 'dự án'}'.`
+      })
+    } catch (e) {
+      console.error('Failed to notify member added:', e)
+    }
+
     showAddMemberModal.value = false
     memberForm.userId = ''
     memberForm.displayName = ''

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { taskApi } from '../api/taskApi';
+import { publishEvent } from '../api/notifyApi';
 
 export const useTaskStore = defineStore('task', {
   state: () => ({
@@ -26,6 +27,27 @@ export const useTaskStore = defineStore('task', {
       try {
         const response = await taskApi.createTask(taskData);
         this.tasks.push(response.data);
+
+        // Notify if there is an assignee
+        const createdTask = response.data;
+        if (createdTask && createdTask.assigneeId && createdTask.assigneeId !== '00000000-0000-0000-0000-000000000000') {
+          try {
+            const userJson = localStorage.getItem('user');
+            const currentUser = userJson ? JSON.parse(userJson) : null;
+            await publishEvent({
+              eventType: 'task.assigned',
+              taskId: createdTask.taskId,
+              projectId: createdTask.boardId,
+              referenceId: createdTask.taskId,
+              actorUserId: currentUser?.id || currentUser?.Id,
+              targetUserId: createdTask.assigneeId,
+              recipientUserIds: [createdTask.assigneeId],
+              message: `Bạn đã được phân công vào công việc '${createdTask.title}'.`
+            });
+          } catch (e) {
+            console.error('Failed to notify task assignment:', e);
+          }
+        }
       } catch (err) {
         this.error = err.message || 'Failed to create task';
         throw err;
@@ -36,10 +58,33 @@ export const useTaskStore = defineStore('task', {
     async updateTask(id, taskData) {
       this.loading = true;
       try {
+        const existingTask = this.tasks.find((t) => t.taskId === id);
+        const oldAssigneeId = existingTask?.assigneeId;
+
         await taskApi.updateTask(id, taskData);
         const index = this.tasks.findIndex((t) => t.taskId === id);
         if (index !== -1) {
           this.tasks[index] = { ...this.tasks[index], ...taskData };
+        }
+
+        const updatedTask = this.tasks[index];
+        if (updatedTask && updatedTask.assigneeId && updatedTask.assigneeId !== '00000000-0000-0000-0000-000000000000' && updatedTask.assigneeId !== oldAssigneeId) {
+          try {
+            const userJson = localStorage.getItem('user');
+            const currentUser = userJson ? JSON.parse(userJson) : null;
+            await publishEvent({
+              eventType: 'task.assigned',
+              taskId: updatedTask.taskId,
+              projectId: updatedTask.boardId,
+              referenceId: updatedTask.taskId,
+              actorUserId: currentUser?.id || currentUser?.Id,
+              targetUserId: updatedTask.assigneeId,
+              recipientUserIds: [updatedTask.assigneeId],
+              message: `Bạn đã được phân công vào công việc '${updatedTask.title}'.`
+            });
+          } catch (e) {
+            console.error('Failed to notify task assignment:', e);
+          }
         }
       } catch (err) {
         this.error = err.message || 'Failed to update task';
