@@ -57,12 +57,14 @@ button {
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-glass);
   border-radius: var(--radius-lg);
-  transition: all var(--transition-slow);
+  transition: transform var(--transition-slow), box-shadow var(--transition-slow), background var(--transition-fast), border-color var(--transition-fast);
+  transform: translate3d(0, 0, 0);
+  will-change: transform, box-shadow;
 }
 
 .glass-panel:hover {
   box-shadow: var(--shadow-xl);
-  transform: translateY(-2px);
+  transform: translate3d(0, -2px, 0);
 }
 
 /* Scrollbar styling */

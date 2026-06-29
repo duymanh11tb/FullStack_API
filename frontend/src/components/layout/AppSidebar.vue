@@ -3,14 +3,9 @@
     <div class="sidebar-header">
       <router-link to="/dashboard" class="sidebar-logo" id="link-home">
         <div class="logo-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <rect x="3" y="3" width="7" height="7" rx="1.5" />
-            <rect x="14" y="3" width="7" height="7" rx="1.5" />
-            <rect x="3" y="14" width="7" height="7" rx="1.5" />
-            <rect x="14" y="14" width="7" height="7" rx="1.5" />
-          </svg>
+          <img src="../../assets/logo.png" alt="ProTask Logo" class="logo-img" />
         </div>
-        <span class="logo-text">QLDA</span>
+        <span class="logo-text">ProTask</span>
       </router-link>
     </div>
 
@@ -125,7 +120,7 @@ function isActive(path) {
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 60;
+  z-index: 100;
   transition: transform var(--transition-slow);
 }
 
@@ -169,6 +164,14 @@ function isActive(path) {
   justify-content: center;
   color: white;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  overflow: hidden;
+}
+
+.logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
 }
 
 .logo-text {

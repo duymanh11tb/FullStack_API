@@ -1,114 +1,109 @@
 <template>
   <div class="task-discussion">
-    <!-- Comment List -->
+    <!-- Comment List Section -->
     <div class="comment-list" ref="commentListRef">
       <LoadingSpinner v-if="loading" text="Đang tải bình luận..." />
       
       <div v-else-if="comments.length > 0" class="comments-wrapper">
-        <div v-for="comment in comments" :key="comment.id" class="comment-item">
-          <!-- Timeline point dot -->
-          <div class="timeline-dot"></div>
+        <div v-for="comment in comments" :key="comment.id" class="comment-item animate-fade">
+          <!-- Timeline connector line dot -->
+          <div class="timeline-dot-wrapper">
+            <div class="timeline-dot"></div>
+          </div>
           
           <div class="comment-avatar" :style="{ background: getAvatarColor(comment.userFullName) }">
             {{ comment.userFullName?.charAt(0)?.toUpperCase() || 'U' }}
           </div>
-          <div class="comment-content">
-            <div class="comment-header">
-              <span class="comment-author">{{ comment.userFullName }}</span>
-              <span class="comment-time">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 4px; vertical-align: middle;">
-                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                </svg>
-                {{ formatTime(comment.createdAt) }}
-              </span>
-            </div>
-            
-            <!-- Edit Root Comment -->
-            <div v-if="editingCommentId === comment.id" class="edit-comment-area animate-fade">
-              <textarea v-model="editingContent" class="comment-input edit-textarea" rows="2"></textarea>
-              <div class="edit-actions">
-                <BaseButton size="sm" variant="secondary" @click="cancelEdit">Hủy</BaseButton>
-                <BaseButton size="sm" variant="primary" :disabled="!editingContent.trim()" @click="saveEdit(comment.id)">Lưu</BaseButton>
+          <div class="comment-bubble-wrapper">
+            <div class="comment-bubble">
+              <div class="comment-header">
+                <span class="comment-author">{{ comment.userFullName }}</span>
+                <span class="comment-time">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="time-icon">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  {{ formatTime(comment.createdAt) }}
+                </span>
+              </div>
+              
+              <!-- Edit Area for Root Comment -->
+              <div v-if="editingCommentId === comment.id" class="edit-comment-area animate-fade">
+                <textarea v-model="editingContent" class="comment-textarea" rows="2"></textarea>
+                <div class="edit-actions">
+                  <button class="btn-text-cancel" @click="cancelEdit">Hủy</button>
+                  <button class="btn-save" :disabled="!editingContent.trim()" @click="saveEdit(comment.id)">Lưu</button>
+                </div>
+              </div>
+              <div v-else class="comment-body" :class="{ 'deleted': comment.isDeleted }">
+                {{ comment.content }}
+                <span v-if="comment.updatedAt && !comment.isDeleted" class="edited-flag">(Đã chỉnh sửa)</span>
+              </div>
+
+              <!-- Root Comment Actions -->
+              <div v-if="!comment.isDeleted" class="comment-actions">
+                <button 
+                  v-if="canManageComment(comment)" 
+                  class="btn-action" 
+                  @click="startEdit(comment)"
+                  title="Chỉnh sửa"
+                >
+                  Sửa
+                </button>
+                <button 
+                  v-if="canManageComment(comment)" 
+                  class="btn-action danger" 
+                  @click="handleDelete(comment.id)"
+                  title="Xóa"
+                >
+                  Xóa
+                </button>
+                <button 
+                  class="btn-action reply" 
+                  @click="startReply(comment.id)"
+                  title="Phản hồi"
+                >
+                  Trả lời
+                </button>
               </div>
             </div>
-            <div v-else class="comment-body" :class="{ 'deleted': comment.isDeleted }">
-              {{ comment.content }}
-              <span v-if="comment.updatedAt && !comment.isDeleted" class="edited-flag">(Đã chỉnh sửa)</span>
-            </div>
 
-            <!-- Root Comment Actions -->
-            <div v-if="!comment.isDeleted" class="comment-actions">
-              <button 
-                v-if="canManageComment(comment)" 
-                class="btn-action-icon" 
-                @click="startEdit(comment)"
-                title="Chỉnh sửa bình luận"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                </svg>
-                Sửa
-              </button>
-              <button 
-                v-if="canManageComment(comment)" 
-                class="btn-action-icon danger" 
-                @click="handleDelete(comment.id)"
-                title="Xóa bình luận"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                </svg>
-                Xóa
-              </button>
-              <button 
-                class="btn-action-icon reply" 
-                @click="startReply(comment.id)"
-                title="Trả lời bình luận"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
-                </svg>
-                Trả lời
-              </button>
-            </div>
-
-            <!-- Reply Input Box -->
+            <!-- Reply Form Trigger Input Box -->
             <div v-if="replyingToId === comment.id" class="reply-input-area animate-fade">
               <textarea 
                 v-model="replyContent" 
-                placeholder="Trả lời bình luận..." 
-                class="comment-input reply-textarea" 
+                placeholder="Phản hồi cuộc thảo luận này..." 
+                class="comment-textarea" 
                 rows="2"
               ></textarea>
               <div class="reply-actions">
-                <BaseButton size="sm" variant="secondary" @click="cancelReply">Hủy</BaseButton>
-                <BaseButton size="sm" variant="primary" :disabled="!replyContent.trim() || submitting" @click="submitReply(comment.id)">Gửi</BaseButton>
+                <button class="btn-text-cancel" @click="cancelReply">Hủy</button>
+                <button class="btn-save" :disabled="!replyContent.trim() || submitting" @click="submitReply(comment.id)">Gửi</button>
               </div>
             </div>
 
-            <!-- Nested Replies -->
-            <div v-if="comment.replies && comment.replies.length > 0" class="replies">
-              <div v-for="reply in comment.replies" :key="reply.id" class="comment-item reply">
+            <!-- Nested Replies list -->
+            <div v-if="comment.replies && comment.replies.length > 0" class="replies-wrapper">
+              <div v-for="reply in comment.replies" :key="reply.id" class="comment-item reply animate-fade">
                 <div class="comment-avatar avatar-sm" :style="{ background: getAvatarColor(reply.userFullName) }">
                   {{ reply.userFullName?.charAt(0)?.toUpperCase() || 'U' }}
                 </div>
-                <div class="comment-content reply-content">
+                <div class="comment-bubble reply-bubble">
                   <div class="comment-header">
                     <span class="comment-author reply-author">{{ reply.userFullName }}</span>
                     <span class="comment-time">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 3px; vertical-align: middle;">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="time-icon">
                         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                       </svg>
                       {{ formatTime(reply.createdAt) }}
                     </span>
                   </div>
                   
-                  <!-- Edit Reply Comment -->
+                  <!-- Edit Area for Reply Comment -->
                   <div v-if="editingCommentId === reply.id" class="edit-comment-area animate-fade">
-                    <textarea v-model="editingContent" class="comment-input edit-textarea" rows="2"></textarea>
+                    <textarea v-model="editingContent" class="comment-textarea" rows="2"></textarea>
                     <div class="edit-actions">
-                      <BaseButton size="sm" variant="secondary" @click="cancelEdit">Hủy</BaseButton>
-                      <BaseButton size="sm" variant="primary" :disabled="!editingContent.trim()" @click="saveEdit(reply.id)">Lưu</BaseButton>
+                      <button class="btn-text-cancel" @click="cancelEdit">Hủy</button>
+                      <button class="btn-save" :disabled="!editingContent.trim()" @click="saveEdit(reply.id)">Lưu</button>
                     </div>
                   </div>
                   <div v-else class="comment-body text-sm" :class="{ 'deleted': reply.isDeleted }">
@@ -116,36 +111,21 @@
                     <span v-if="reply.updatedAt && !reply.isDeleted" class="edited-flag">(Đã chỉnh sửa)</span>
                   </div>
 
-                  <!-- Reply Actions -->
+                  <!-- Reply Comment Actions -->
                   <div v-if="!reply.isDeleted" class="comment-actions">
                     <button 
                       v-if="canManageComment(reply)" 
-                      class="btn-action-icon" 
+                      class="btn-action" 
                       @click="startEdit(reply)"
                     >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                      </svg>
                       Sửa
                     </button>
                     <button 
                       v-if="canManageComment(reply)" 
-                      class="btn-action-icon danger" 
+                      class="btn-action danger" 
                       @click="handleDelete(reply.id)"
                     >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                      </svg>
                       Xóa
-                    </button>
-                    <button 
-                      class="btn-action-icon reply" 
-                      @click="startReply(comment.id)"
-                    >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
-                      </svg>
-                      Trả lời
                     </button>
                   </div>
                 </div>
@@ -157,18 +137,18 @@
 
       <div v-else class="empty-comments animate-fade">
         <div class="empty-comment-icon">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         </div>
-        <p class="empty-text-main">Chưa có cuộc thảo luận nào</p>
-        <p class="empty-text-sub">Hãy là người đầu tiên bình luận và tag đồng nghiệp bằng @</p>
+        <h4 class="empty-text-main">Chưa có thảo luận</h4>
+        <p class="empty-text-sub">Hãy gõ bình luận hoặc tag đồng nghiệp bằng ký tự @</p>
       </div>
     </div>
 
-    <!-- Input Box -->
-    <div class="comment-input-area">
-      <!-- Mentions Dropdown -->
+    <!-- Input Section at the Bottom -->
+    <div class="comment-input-section">
+      <!-- Autocomplete Mentions Dropdown -->
       <transition name="fade">
         <div v-if="showMentionsDropdown && filteredMembers.length > 0" class="mentions-dropdown">
           <div
@@ -188,32 +168,30 @@
         </div>
       </transition>
 
-      <div class="input-wrapper">
+      <div class="input-container">
         <textarea
           v-model="newComment"
-          placeholder="Viết bình luận hoặc tag thành viên bằng @..."
-          rows="3"
-          class="comment-input main-input"
+          placeholder="Nhập nội dung thảo luận... (Gõ @ để tag thành viên)"
+          rows="2"
+          class="discussion-textarea"
           @keydown="handleKeyDown"
           @input="handleInput"
           @click="showMentionsDropdown = false"
           ref="textareaRef"
         ></textarea>
-        <div class="input-actions">
-          <span class="help-text">
-            💡 <strong>Shift + Enter</strong> để xuống dòng. Nhấn <strong>Enter</strong> để gửi nhanh.
-          </span>
-          <BaseButton
-            variant="primary"
+        
+        <div class="input-footer">
+          <span class="keyboard-hint">Nhấn <strong>Enter</strong> để gửi nhanh</span>
+          <button
+            class="btn-send-comment"
             :disabled="!newComment.trim() || submitting"
             @click="submitComment"
-            class="send-btn"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 6px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
               <line x1="22" y1="2" x2="11" y2="13"/><polyline points="22 2 15 22 11 13 2 9 22 2"/>
             </svg>
-            Gửi bình luận
-          </BaseButton>
+            Gửi
+          </button>
         </div>
       </div>
     </div>
@@ -221,316 +199,301 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, computed } from 'vue'
-import { getCommentsByTask, createComment, deleteComment, updateComment } from '../../api/notifyApi'
-import { taskApi } from '../../api/taskApi'
-import { getMembers } from '../../api/projectApi'
-import { useAuthStore } from '../../stores/auth'
-import LoadingSpinner from '../common/LoadingSpinner.vue'
-import BaseButton from '../common/BaseButton.vue'
+import { ref, onMounted, nextTick, computed, defineProps } from 'vue';
+import { getCommentsByTask, createComment, deleteComment, updateComment } from '../../api/notifyApi';
+import { taskApi } from '../../api/taskApi';
+import { getMembers } from '../../api/projectApi';
+import { useAuthStore } from '../../stores/auth';
+import LoadingSpinner from '../common/LoadingSpinner.vue';
 
 const props = defineProps({
   taskId: {
     type: String,
     required: true
   }
-})
+});
 
-const authStore = useAuthStore()
-const loading = ref(true)
-const submitting = ref(false)
-const comments = ref([])
-const newComment = ref('')
-const commentListRef = ref(null)
+const authStore = useAuthStore();
+const loading = ref(true);
+const submitting = ref(false);
+const comments = ref([]);
+const newComment = ref('');
+const commentListRef = ref(null);
 
-// Edit Comment state
-const editingCommentId = ref(null)
-const editingContent = ref('')
+const editingCommentId = ref(null);
+const editingContent = ref('');
 
-// Reply state
-const replyingToId = ref(null)
-const replyContent = ref('')
+const replyingToId = ref(null);
+const replyContent = ref('');
 
-// Mentions Autocomplete State
-const textareaRef = ref(null)
-const showMentionsDropdown = ref(false)
-const mentionSearchQuery = ref('')
-const mentionSelectedIndex = ref(0)
-const mentionTriggerIndex = ref(-1)
-const members = ref([])
+const textareaRef = ref(null);
+const showMentionsDropdown = ref(false);
+const mentionSearchQuery = ref('');
+const mentionSelectedIndex = ref(0);
+const mentionTriggerIndex = ref(-1);
+const members = ref([]);
 
 const defaultSeedUsers = [
   { displayName: 'admin', email: 'admin@example.com', userId: 'seed-admin' },
   { displayName: 'duymanh', email: 'duymanh@example.com', userId: 'seed-duymanh' },
   { displayName: 'tranailinh', email: 'tranailinh@example.com', userId: 'seed-tranailinh' }
-]
+];
 
-const avatarColors = ['#2563EB', '#7C3AED', '#DC2626', '#D97706', '#16A34A', '#0891B2', '#DB2777', '#4F46E5']
+const avatarColors = ['#2563EB', '#7C3AED', '#DC2626', '#D97706', '#16A34A', '#0891B2', '#DB2777', '#4F46E5'];
 
 function getAvatarColor(name) {
-  if (!name) return avatarColors[0]
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  return avatarColors[Math.abs(hash) % avatarColors.length]
+  if (!name) return avatarColors[0];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return avatarColors[Math.abs(hash) % avatarColors.length];
 }
 
 function getMemberUsername(member) {
-  if (member.username) return member.username
-  if (member.email) return member.email.split('@')[0]
-  return member.displayName.toLowerCase().replace(/\s+/g, '')
+  if (member.username) return member.username;
+  if (member.email) return member.email.split('@')[0];
+  return member.displayName.toLowerCase().replace(/\s+/g, '');
 }
 
 const filteredMembers = computed(() => {
-  const query = mentionSearchQuery.value.toLowerCase()
-  if (!query) return members.value
+  const query = mentionSearchQuery.value.toLowerCase();
+  if (!query) return members.value;
   
   return members.value.filter(member => {
-    const username = getMemberUsername(member).toLowerCase()
-    const name = member.displayName.toLowerCase()
-    return username.includes(query) || name.includes(query)
-  })
-})
+    const username = getMemberUsername(member).toLowerCase();
+    const name = member.displayName.toLowerCase();
+    return username.includes(query) || name.includes(query);
+  });
+});
 
 async function fetchProjectMembers() {
   try {
-    const taskRes = await taskApi.getTask(props.taskId)
-    const taskData = taskRes.data?.data || taskRes.data
-    const boardId = taskData?.boardId || taskData?.boardID || taskData?.projectId
+    const taskRes = await taskApi.getTask(props.taskId);
+    const taskData = taskRes.data?.data || taskRes.data;
+    const boardId = taskData?.boardId || taskData?.boardID || taskData?.projectId;
     
     if (boardId) {
-      const membersRes = await getMembers(boardId)
-      const projectMembers = membersRes.data?.data || membersRes.data || []
+      const membersRes = await getMembers(boardId);
+      const projectMembers = membersRes.data?.data || membersRes.data || [];
       
-      const combined = [...projectMembers]
+      const combined = [...projectMembers];
       defaultSeedUsers.forEach(seed => {
         if (!combined.some(m => m.email?.toLowerCase() === seed.email.toLowerCase())) {
-          combined.push(seed)
+          combined.push(seed);
         }
-      })
-      members.value = combined
+      });
+      members.value = combined;
     } else {
-      members.value = defaultSeedUsers
+      members.value = defaultSeedUsers;
     }
   } catch (err) {
-    console.error('Lỗi khi tải thành viên dự án:', err)
-    members.value = defaultSeedUsers
+    console.error('Lỗi khi tải thành viên dự án:', err);
+    members.value = defaultSeedUsers;
   }
 }
 
 function handleInput(event) {
-  const textarea = event.target
-  const value = textarea.value
-  const selectionStart = textarea.selectionStart
+  const textarea = event.target;
+  const value = textarea.value;
+  const selectionStart = textarea.selectionStart;
 
-  const textBeforeCursor = value.slice(0, selectionStart)
-  const lastAtSymbol = textBeforeCursor.lastIndexOf('@')
+  const textBeforeCursor = value.slice(0, selectionStart);
+  const lastAtSymbol = textBeforeCursor.lastIndexOf('@');
 
   if (lastAtSymbol !== -1) {
-    const isFirstCharOrPrecededByWhitespace = lastAtSymbol === 0 || /\s/.test(textBeforeCursor[lastAtSymbol - 1])
-    const searchString = textBeforeCursor.slice(lastAtSymbol + 1)
-    const hasSpaceAfterAt = /\s/.test(searchString)
+    const isFirstCharOrPrecededByWhitespace = lastAtSymbol === 0 || /\s/.test(textBeforeCursor[lastAtSymbol - 1]);
+    const searchString = textBeforeCursor.slice(lastAtSymbol + 1);
+    const hasSpaceAfterAt = /\s/.test(searchString);
     
     if (isFirstCharOrPrecededByWhitespace && !hasSpaceAfterAt) {
-      showMentionsDropdown.value = true
-      mentionSearchQuery.value = searchString
-      mentionTriggerIndex.value = lastAtSymbol
-      mentionSelectedIndex.value = 0
-      return
+      showMentionsDropdown.value = true;
+      mentionSearchQuery.value = searchString;
+      mentionTriggerIndex.value = lastAtSymbol;
+      mentionSelectedIndex.value = 0;
+      return;
     }
   }
   
-  showMentionsDropdown.value = false
+  showMentionsDropdown.value = false;
 }
 
 function handleKeyDown(event) {
   if (showMentionsDropdown.value) {
     if (event.key === 'ArrowDown') {
-      event.preventDefault()
-      mentionSelectedIndex.value = (mentionSelectedIndex.value + 1) % filteredMembers.value.length
-      return
+      event.preventDefault();
+      mentionSelectedIndex.value = (mentionSelectedIndex.value + 1) % filteredMembers.value.length;
+      return;
     } else if (event.key === 'ArrowUp') {
-      event.preventDefault()
-      mentionSelectedIndex.value = (mentionSelectedIndex.value - 1 + filteredMembers.value.length) % filteredMembers.value.length
-      return
+      event.preventDefault();
+      mentionSelectedIndex.value = (mentionSelectedIndex.value - 1 + filteredMembers.value.length) % filteredMembers.value.length;
+      return;
     } else if (event.key === 'Enter' || event.key === 'Tab') {
-      event.preventDefault()
+      event.preventDefault();
       if (filteredMembers.value[mentionSelectedIndex.value]) {
-        selectMention(filteredMembers.value[mentionSelectedIndex.value])
+        selectMention(filteredMembers.value[mentionSelectedIndex.value]);
       }
-      return
+      return;
     } else if (event.key === 'Escape') {
-      event.preventDefault()
-      showMentionsDropdown.value = false
-      return
+      event.preventDefault();
+      showMentionsDropdown.value = false;
+      return;
     }
   }
 
-  // Handle enter key to submit comment when not using dropdown
   if (event.key === 'Enter' && !event.shiftKey) {
-    event.preventDefault()
-    submitComment()
+    event.preventDefault();
+    submitComment();
   }
 }
 
 function selectMention(member) {
-  if (!member) return
+  if (!member) return;
   
-  const username = getMemberUsername(member)
-  const textarea = textareaRef.value
-  if (!textarea) return
+  const username = getMemberUsername(member);
+  const textarea = textareaRef.value;
+  if (!textarea) return;
   
-  const beforeText = newComment.value.slice(0, mentionTriggerIndex.value)
-  const afterText = newComment.value.slice(textarea.selectionStart)
+  const beforeText = newComment.value.slice(0, mentionTriggerIndex.value);
+  const afterText = newComment.value.slice(textarea.selectionStart);
   
-  newComment.value = beforeText + '@' + username + ' ' + afterText
-  showMentionsDropdown.value = false
+  newComment.value = beforeText + '@' + username + ' ' + afterText;
+  showMentionsDropdown.value = false;
   
   nextTick(() => {
-    textarea.focus()
-    const newCursorPos = mentionTriggerIndex.value + username.length + 2
-    textarea.setSelectionRange(newCursorPos, newCursorPos)
-  })
+    textarea.focus();
+    const newCursorPos = mentionTriggerIndex.value + username.length + 2;
+    textarea.setSelectionRange(newCursorPos, newCursorPos);
+  });
 }
 
 function formatTime(dateStr) {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
   return new Intl.DateTimeFormat('vi-VN', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
-  }).format(date)
+  }).format(date);
 }
 
 function scrollToBottom() {
   nextTick(() => {
     if (commentListRef.value) {
-      commentListRef.value.scrollTop = commentListRef.value.scrollHeight
+      commentListRef.value.scrollTop = commentListRef.value.scrollHeight;
     }
-  })
+  });
 }
 
 async function loadComments() {
-  loading.value = true
+  loading.value = true;
   try {
-    const res = await getCommentsByTask(props.taskId)
-    comments.value = res.data || []
-    scrollToBottom()
+    const res = await getCommentsByTask(props.taskId);
+    comments.value = res.data || [];
+    scrollToBottom();
   } catch (err) {
-    console.error('Lỗi khi tải bình luận', err)
+    console.error('Lỗi khi tải bình luận', err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function submitComment() {
-  if (!newComment.value.trim() || submitting.value) return
+  if (!newComment.value.trim() || submitting.value) return;
 
-  submitting.value = true
+  submitting.value = true;
   try {
     await createComment({
       taskId: props.taskId,
       content: newComment.value.trim()
-    })
-    newComment.value = ''
-    await loadComments()
+    });
+    newComment.value = '';
+    await loadComments();
   } catch (err) {
-    alert(err.response?.data?.message || 'Không thể gửi bình luận')
+    alert(err.response?.data?.message || 'Không thể gửi bình luận');
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
 }
 
 async function handleDelete(id) {
-  if (!confirm('Xóa bình luận này?')) return
+  if (!confirm('Xóa bình luận này?')) return;
   try {
-    await deleteComment(id)
-    if (editingCommentId.value === id) cancelEdit()
-    if (replyingToId.value === id) cancelReply()
-    await loadComments()
+    await deleteComment(id);
+    if (editingCommentId.value === id) cancelEdit();
+    if (replyingToId.value === id) cancelReply();
+    await loadComments();
   } catch (err) {
-    alert(err.response?.data?.message || 'Không thể xóa bình luận')
+    alert(err.response?.data?.message || 'Không thể xóa bình luận');
   }
 }
 
-// Edit actions
 function startEdit(comment) {
-  editingCommentId.value = comment.id
-  editingContent.value = comment.content
+  editingCommentId.value = comment.id;
+  editingContent.value = comment.content;
 }
 
 function cancelEdit() {
-  editingCommentId.value = null
-  editingContent.value = ''
+  editingCommentId.value = null;
+  editingContent.value = '';
 }
 
 async function saveEdit(id) {
-  if (!editingContent.value.trim()) return
+  if (!editingContent.value.trim()) return;
   try {
-    await updateComment(id, { content: editingContent.value.trim() })
-    cancelEdit()
-    await loadComments()
+    await updateComment(id, { content: editingContent.value.trim() });
+    cancelEdit();
+    await loadComments();
   } catch (err) {
-    alert(err.response?.data?.message || 'Không thể cập nhật bình luận')
+    alert(err.response?.data?.message || 'Không thể cập nhật bình luận');
   }
 }
 
-// Reply actions
 function startReply(parentId) {
-  replyingToId.value = parentId
-  replyContent.value = ''
+  replyingToId.value = parentId;
+  replyContent.value = '';
 }
 
 function cancelReply() {
-  replyingToId.value = null
-  replyContent.value = ''
+  replyingToId.value = parentId;
+  replyContent.value = '';
 }
 
 async function submitReply(parentId) {
-  if (!replyContent.value.trim() || submitting.value) return
-  submitting.value = true
+  if (!replyContent.value.trim() || submitting.value) return;
+  submitting.value = true;
   try {
     await createComment({
       taskId: props.taskId,
       content: replyContent.value.trim(),
       parentCommentId: parentId
-    })
-    cancelReply()
-    await loadComments()
+    });
+    cancelReply();
+    await loadComments();
   } catch (err) {
-    alert(err.response?.data?.message || 'Không thể gửi phản hồi')
+    alert(err.response?.data?.message || 'Không thể gửi phản hồi');
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
 }
 
-// Permission check helpers
 const currentUserRole = computed(() => {
-  if (!authStore.user?.id) return null
-  const member = members.value.find(m => m.userId === authStore.user.id || m.id === authStore.user.id)
-  return member ? member.role : null
-})
+  if (!authStore.user?.id) return null;
+  const member = members.value.find(m => m.userId === authStore.user.id || m.id === authStore.user.id);
+  return member ? member.role : null;
+});
 
 function canManageComment(comment) {
-  if (comment.isDeleted) return false
-  
-  // 1. Author check
-  const isAuthor = authStore.user?.id === comment.userId
-  if (isAuthor) return true
-  
-  // 2. Admin check
-  if (authStore.isAdmin) return true
-  
-  // 3. Project Manager/Owner check
-  const role = currentUserRole.value
-  const isProjectManager = role === 0 || role === 1 || role === 'Owner' || role === 'Manager' || role === 'Admin'
-  
-  return isProjectManager
+  if (comment.isDeleted) return false;
+  const isAuthor = authStore.user?.id === comment.userId;
+  if (isAuthor) return true;
+  if (authStore.isAdmin) return true;
+  const role = currentUserRole.value;
+  const isProjectManager = role === 0 || role === 1 || role === 'Owner' || role === 'Manager' || role === 'Admin';
+  return isProjectManager;
 }
 
 onMounted(() => {
-  loadComments()
-  fetchProjectMembers()
-})
+  loadComments();
+  fetchProjectMembers();
+});
 </script>
 
 <style scoped>
@@ -538,14 +501,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 460px;
-  max-height: 620px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  background: var(--bg-card);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: var(--shadow-glass);
+  max-height: 480px;
+  background: transparent;
   overflow: hidden;
   position: relative;
 }
@@ -553,113 +510,127 @@ onMounted(() => {
 .comment-list {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-6);
-  background: transparent;
-  position: relative;
+  padding: 10px 4px var(--space-4) 4px;
 }
 
-/* Glass timeline line */
+/* Scrollbar styling */
+.comment-list::-webkit-scrollbar {
+  width: 4px;
+}
+.comment-list::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
 .comments-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
   position: relative;
 }
 
+/* Timeline center connector */
 .comments-wrapper::before {
   content: '';
   position: absolute;
-  top: 16px;
-  bottom: 16px;
-  left: 19px;
-  width: 2px;
+  top: 10px;
+  bottom: 10px;
+  left: 17px;
+  width: 1px;
   background: var(--border-color);
   z-index: 0;
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .comment-item {
   display: flex;
-  gap: var(--space-4);
+  gap: 12px;
   position: relative;
   z-index: 2;
 }
 
-.timeline-dot {
+.timeline-dot-wrapper {
   position: absolute;
-  left: 17px;
-  top: 14px;
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-full);
+  left: 15px;
+  top: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timeline-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
   background: var(--color-primary);
-  box-shadow: 0 0 6px var(--color-primary);
-  z-index: 3;
+  box-shadow: 0 0 4px var(--color-primary);
 }
 
 .comment-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-full);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: var(--font-weight-extrabold);
-  font-size: var(--font-size-sm);
+  font-weight: 800;
+  font-size: 11px;
   flex-shrink: 0;
-  border: 2.5px solid var(--bg-white-to-card);
-  box-shadow: var(--shadow-sm);
+  border: 2px solid var(--bg-card);
+  box-shadow: var(--shadow-xs);
   z-index: 2;
-  transition: transform var(--transition-fast);
-}
-
-.comment-item:hover .comment-avatar {
-  transform: scale(1.06);
 }
 
 .avatar-sm {
-  width: 30px;
-  height: 30px;
-  font-size: var(--font-size-xs);
-  border-width: 2px;
+  width: 24px;
+  height: 24px;
+  font-size: 9px;
+  border-width: 1.5px;
 }
 
-.comment-content {
+.comment-bubble-wrapper {
   flex: 1;
-  background: var(--glass-bg);
-  padding: var(--space-4) var(--space-5);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Modern Chat Bubble style */
+.comment-bubble {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px var(--radius-lg) var(--radius-lg) var(--radius-lg);
+  padding: 10px 14px;
   box-shadow: var(--shadow-xs);
-  transition: all var(--transition-base);
+  position: relative;
+  transition: all var(--transition-fast);
 }
 
-.comment-item:hover .comment-content {
-  background: var(--bg-white-to-card);
+.comment-bubble:hover {
   border-color: var(--color-border-hover);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 
-.reply-content {
-  background: rgba(255, 255, 255, 0.4);
-}
-
-[data-theme='dark'] .reply-content {
-  background: rgba(15, 23, 42, 0.3);
+.reply-bubble {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
 }
 
 .comment-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .comment-author {
   font-weight: 700;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
 }
 
 .reply-author {
@@ -667,16 +638,21 @@ onMounted(() => {
 }
 
 .comment-time {
-  font-size: 11px;
-  color: var(--color-text-tertiary);
+  font-size: 9px;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
+  gap: 3px;
+}
+
+.time-icon {
+  opacity: 0.7;
 }
 
 .comment-body {
   font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  line-height: 1.6;
+  color: var(--text-secondary);
+  line-height: 1.5;
   white-space: pre-wrap;
 }
 
@@ -686,99 +662,107 @@ onMounted(() => {
 
 .comment-body.deleted {
   font-style: italic;
-  color: var(--color-text-tertiary);
-  opacity: 0.8;
+  color: var(--text-muted);
 }
 
+/* Hover-only comment action links */
 .comment-actions {
   display: flex;
-  gap: 16px;
-  margin-top: 10px;
+  gap: 12px;
+  margin-top: 6px;
   opacity: 0;
   transition: opacity var(--transition-fast);
+  justify-content: flex-end;
 }
 
-.comment-content:hover .comment-actions {
+.comment-bubble:hover .comment-actions {
   opacity: 1;
 }
 
-.btn-action-icon {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: none;
+.btn-action {
+  background: transparent;
   border: none;
-  color: var(--color-text-tertiary);
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 700;
+  color: var(--text-muted);
   cursor: pointer;
-  padding: 4px 6px;
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-fast);
 }
-
-.btn-action-icon:hover {
-  background: var(--color-primary-light);
+.btn-action:hover {
   color: var(--color-primary);
+  text-decoration: underline;
 }
-
-.btn-action-icon.danger:hover {
-  background: var(--color-danger-light);
+.btn-action.danger:hover {
   color: var(--color-danger);
 }
-
-.btn-action-icon.reply:hover {
-  background: var(--color-success-light);
+.btn-action.reply:hover {
   color: var(--color-success);
 }
 
 .edited-flag {
-  font-size: 10px;
-  color: var(--color-text-tertiary);
-  margin-left: var(--space-2);
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-left: 6px;
   font-style: italic;
 }
 
-.comment-item.reply {
-  margin-top: var(--space-3);
-  position: relative;
-}
-
-.comment-item.reply::before {
-  content: '';
-  position: absolute;
-  left: -20px;
-  top: 14px;
-  width: 14px;
-  height: 2px;
-  background: var(--border-color);
-}
-
-.replies {
-  margin-top: var(--space-3);
-  padding-left: var(--space-3);
-  border-left: 2px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.edit-comment-area, .reply-input-area {
-  margin-top: var(--space-3);
+/* Reply Thread indentations */
+.replies-wrapper {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-top: 4px;
+  border-left: 1px dashed var(--border-color);
+  padding-left: 12px;
 }
 
-.edit-textarea, .reply-textarea {
-  min-height: 60px;
-  background: var(--color-bg);
+.comment-item.reply {
+  position: relative;
+}
+
+.edit-comment-area, .reply-input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.comment-textarea {
+  width: 100%;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  font-size: var(--font-size-xs);
+  resize: none;
 }
 
 .edit-actions, .reply-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
+}
+
+.btn-text-cancel {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.btn-save {
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  background: var(--color-primary);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .empty-comments {
@@ -786,156 +770,157 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 240px;
-  color: var(--color-text-tertiary);
+  padding: var(--space-8) 0;
   text-align: center;
 }
 
 .empty-comment-icon {
-  width: 64px;
-  height: 64px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--color-bg-secondary);
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: var(--space-4);
-  color: var(--text-muted);
+  margin-bottom: var(--space-3);
 }
 
 .empty-text-main {
+  font-size: var(--font-size-sm);
   font-weight: 700;
-  font-size: var(--font-size-base);
-  color: var(--color-text-primary);
-  margin-bottom: 4px;
+  color: var(--text-primary);
+  margin-bottom: 2px;
 }
 
 .empty-text-sub {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-  max-width: 250px;
+  font-size: 10px;
+  color: var(--text-muted);
 }
 
-.comment-input-area {
-  padding: var(--space-5) var(--space-6);
-  background: var(--bg-white-to-card);
-  border-top: 1px solid var(--color-border);
+/* Discussion Input form area */
+.comment-input-section {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-color);
   position: relative;
 }
 
-.input-wrapper {
+.input-container {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-}
-
-.comment-input {
-  width: 100%;
+  gap: 8px;
+  background: var(--color-bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 12px 16px;
-  font-size: var(--font-size-sm);
-  font-family: inherit;
-  resize: none;
-  background: var(--color-bg);
+  padding: 8px var(--space-3);
+}
+
+.discussion-textarea {
+  width: 100%;
+  border: none;
+  background: transparent;
   color: var(--text-primary);
-  transition: all var(--transition-fast);
-}
-
-.comment-input:focus {
+  font-size: var(--font-size-xs);
+  resize: none;
+  font-family: inherit;
   outline: none;
-  border-color: var(--color-primary);
-  background: var(--bg-white-to-card);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
-.input-actions {
+.input-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 6px;
 }
 
-.help-text {
-  font-size: 11px;
-  color: var(--color-text-tertiary);
+.keyboard-hint {
+  font-size: 8px;
+  color: var(--text-muted);
 }
 
-.send-btn {
+.btn-send-comment {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-weight: 700;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  color: white;
+  background: var(--color-primary);
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
 }
 
-/* Mentions Dropdown Styling */
+.btn-send-comment:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.btn-send-comment:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Mentions Dropdown Auto-complete list */
 .mentions-dropdown {
   position: absolute;
-  bottom: calc(100% - 8px);
-  left: var(--space-6);
-  width: calc(100% - (var(--space-6) * 2));
-  max-width: 320px;
+  bottom: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  max-width: 280px;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-glass);
-  max-height: 200px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 160px;
   overflow-y: auto;
   z-index: 100;
-  display: flex;
-  flex-direction: column;
-  padding: 6px;
+  padding: 4px;
 }
 
 .mention-item {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: 8px 12px;
-  border-radius: var(--radius-md);
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all var(--transition-fast);
 }
 
 .mention-item:hover, .mention-item.active {
   background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .mention-avatar {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  font-size: 12px;
-  flex-shrink: 0;
-  box-shadow: var(--shadow-xs);
+  font-size: 10px;
 }
 
 .mention-info {
   display: flex;
   flex-direction: column;
-  min-width: 0;
 }
 
 .mention-name {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--color-text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: var(--text-primary);
 }
 
 .mention-username {
-  font-size: 11px;
-  color: var(--color-text-tertiary);
+  font-size: 9px;
+  color: var(--text-muted);
 }
 
 .animate-fade {

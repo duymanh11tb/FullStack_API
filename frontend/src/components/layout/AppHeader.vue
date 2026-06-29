@@ -266,7 +266,7 @@ onBeforeUnmount(() => {
   padding: 0 var(--space-6);
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 80;
   transition: all var(--transition-slow);
 }
 
@@ -374,7 +374,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-bg-secondary);
 }
 
 .notif-dropdown-header h4 {
@@ -469,7 +469,7 @@ onBeforeUnmount(() => {
   color: var(--color-primary);
   border-top: 1px solid var(--border-color);
   transition: all var(--transition-fast);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-bg-secondary);
 }
 
 .notif-dropdown-footer:hover {

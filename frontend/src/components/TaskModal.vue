@@ -1,129 +1,79 @@
 <template>
   <div v-if="isOpen" class="modal-overlay" @click.self="closeModal">
     <div class="modal-content glass-panel" :class="{ 'modal-large': isEdit }">
+      <!-- Modal Header -->
       <div class="modal-header">
-        <h2>{{ isEdit ? 'Chi tiết tác vụ' : 'Tạo tác vụ mới' }}</h2>
+        <div class="header-left-side" v-if="isEdit">
+          <!-- Breadcrumbs: Project Name / Task Code -->
+          <div class="modal-breadcrumbs">
+            <span class="project-crumb">{{ projectName }}</span>
+            <span class="divider">/</span>
+            <span class="task-crumb">{{ taskCode }}</span>
+          </div>
+        </div>
+        <h2 v-else class="create-title">Tạo tác vụ mới</h2>
         <button class="close-btn" @click="closeModal">&times;</button>
       </div>
       
-      <div class="modal-body" :class="{ 'with-discussion': isEdit }">
-        <div class="task-form-container">
+      <!-- Modal Body (Two columns in Edit Mode) -->
+      <div class="modal-body" :class="{ 'edit-mode-grid': isEdit }">
+        <!-- 1. LEFT COLUMN: Task Main Info (Title, Description, Subtasks) -->
+        <div class="task-left-section">
           <form @submit.prevent="submitForm" class="task-form">
-            <!-- Project and Assignee Selection -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="project">Dự án (Project)</label>
-                <select 
-                  id="project" 
-                  v-model="formData.boardId" 
-                  :disabled="isEdit" 
-                  required
-                >
-                  <option value="" disabled>Chọn dự án...</option>
-                  <option 
-                    v-for="p in projectStore.projects" 
-                    :key="p.id" 
-                    :value="p.id"
-                  >
-                    {{ p.name }}
-                  </option>
-                </select>
-              </div>
-              
-              <div class="form-group">
-                <label for="assignee">Người phụ trách (Assignee)</label>
-                <div class="assignee-select-wrapper">
-                  <select id="assignee" v-model="formData.assigneeId">
-                    <option value="">Chưa giao việc (None)</option>
-                    <option 
-                      v-for="m in projectMembers" 
-                      :key="m.userId || m.id" 
-                      :value="m.userId || m.id"
-                    >
-                      {{ m.displayName }}
-                    </option>
-                  </select>
-                  <button 
-                    v-if="formData.boardId"
-                    type="button" 
-                    class="btn-assign-me" 
-                    @click="assignToMe"
-                    title="Giao cho tôi"
-                  >
-                    Tôi
-                  </button>
-                </div>
-              </div>
+            <!-- Project Selection (For Create Mode only, disabled in Edit) -->
+            <div class="form-group" v-if="!isEdit">
+              <label for="project">Dự án (Project)</label>
+              <select id="project" v-model="formData.boardId" required>
+                <option value="" disabled>Chọn dự án...</option>
+                <option v-for="p in projectStore.projects" :key="p.id" :value="p.id">
+                  {{ p.name }}
+                </option>
+              </select>
             </div>
 
-            <div class="form-group">
-              <label for="title">Tiêu đề</label>
-              <input id="title" v-model="formData.title" type="text" required placeholder="Tên tác vụ..." />
+            <!-- Task Title (Large style in Edit mode) -->
+            <div class="form-group title-group">
+              <label for="title" v-if="!isEdit">Tiêu đề</label>
+              <input 
+                id="title" 
+                v-model="formData.title" 
+                type="text" 
+                required 
+                placeholder="Tên tác vụ..." 
+                :class="{ 'title-large': isEdit }"
+              />
             </div>
             
-            <div class="form-group">
-              <label for="description">Mô tả</label>
-              <textarea id="description" v-model="formData.description" rows="3" placeholder="Thêm mô tả chi tiết..."></textarea>
+            <!-- Description -->
+            <div class="form-group desc-group">
+              <label for="description">Mô tả tác vụ</label>
+              <textarea 
+                id="description" 
+                v-model="formData.description" 
+                rows="4" 
+                placeholder="Thêm mô tả chi tiết cho công việc này..."
+              ></textarea>
             </div>
             
-            <div class="form-row">
-              <div class="form-group">
-                <label for="priority">Độ ưu tiên</label>
-                <select id="priority" v-model="formData.priority">
-                  <option :value="0">Thấp (Low)</option>
-                  <option :value="1">Trung bình (Medium)</option>
-                  <option :value="2">Cao (High)</option>
-                  <option :value="3">Khẩn cấp (Urgent)</option>
-                </select>
-              </div>
-              
-              <div class="form-group">
-                <label for="status">Trạng thái</label>
-                <select id="status" v-model="formData.currentStatus">
-                  <option :value="0">Cần làm (To Do)</option>
-                  <option :value="1">Đang làm (In Progress)</option>
-                  <option :value="2">Đánh giá (Review)</option>
-                  <option :value="3">Hoàn thành (Done)</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="deadline">Hạn chót</label>
-                <input id="deadline" v-model="formData.deadline" type="datetime-local" />
-                <div class="quick-dates">
-                  <button type="button" class="btn-quick-date" @click="setDeadlineDays(0)">Hôm nay</button>
-                  <button type="button" class="btn-quick-date" @click="setDeadlineDays(3)">3 ngày</button>
-                  <button type="button" class="btn-quick-date" @click="setDeadlineDays(7)">1 tuần</button>
-                </div>
-              </div>
-              
-              <div class="form-group">
-                <label for="colorLabel">Nhãn màu</label>
-                <input id="colorLabel" v-model="formData.colorLabel" type="color" />
-              </div>
-            </div>
-
             <!-- Subtasks checklist -->
             <div class="form-group subtasks-group">
               <label>Công việc phụ (Subtasks)</label>
               
-              <!-- Add subtask input -->
+              <!-- Input box to add subtasks -->
               <div class="subtask-input-wrapper">
                 <input 
                   type="text" 
                   v-model="newSubtaskTitle" 
-                  placeholder="Nhập việc phụ và nhấn Enter..." 
+                  placeholder="Thêm việc phụ và nhấn Enter..." 
                   @keydown.enter.prevent="addSubtask" 
                 />
                 <button type="button" class="btn-add-subtask" @click="addSubtask">Thêm</button>
               </div>
 
-              <!-- Progress bar -->
+              <!-- Subtasks Progress line -->
               <div v-if="totalSubTasksCount > 0" class="subtasks-progress">
                 <div class="progress-info">
-                  <span>Tiến độ việc phụ: {{ completedSubTasksCount }}/{{ totalSubTasksCount }}</span>
+                  <span>Tiến độ: {{ completedSubTasksCount }}/{{ totalSubTasksCount }} việc phụ</span>
                   <span>{{ subTasksProgressPercent }}%</span>
                 </div>
                 <div class="progress-track">
@@ -131,7 +81,7 @@
                 </div>
               </div>
 
-              <!-- Subtask list -->
+              <!-- List of subtasks -->
               <div class="subtask-list" v-if="totalSubTasksCount > 0">
                 <div 
                   v-for="(st, idx) in formData.subTasks" 
@@ -151,52 +101,202 @@
                 </div>
               </div>
 
-              <!-- Auto status sync toggle -->
+              <!-- Auto update parent task status toggle -->
               <div v-if="totalSubTasksCount > 0" class="auto-sync-toggle">
                 <label class="toggle-label">
                   <input type="checkbox" v-model="autoTransition" />
-                  <span class="toggle-text">Tự động hoàn thành task khi xong việc phụ</span>
+                  <span class="toggle-text">Tự động hoàn thành task khi xong hết việc phụ</span>
                 </label>
               </div>
             </div>
+
+            <!-- Standard attributes form layout for Create Mode only -->
+            <div class="create-mode-attributes" v-if="!isEdit">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="assignee">Người phụ trách</label>
+                  <div class="assignee-select-wrapper">
+                    <select id="assignee" v-model="formData.assigneeId">
+                      <option value="">Chưa giao việc (None)</option>
+                      <option v-for="m in projectMembers" :key="m.userId || m.id" :value="m.userId || m.id">
+                        {{ m.displayName }}
+                      </option>
+                    </select>
+                    <button type="button" class="btn-assign-me" @click="assignToMe">Tôi</button>
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label for="priority">Độ ưu tiên</label>
+                  <select id="priority" v-model="formData.priority">
+                    <option :value="0">Thấp (Low)</option>
+                    <option :value="1">Trung bình (Medium)</option>
+                    <option :value="2">Cao (High)</option>
+                    <option :value="3">Khẩn cấp (Urgent)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="status">Trạng thái</label>
+                  <select id="status" v-model="formData.currentStatus">
+                    <option :value="0">Cần làm (To Do)</option>
+                    <option :value="1">Đang làm (In Progress)</option>
+                    <option :value="2">Đánh giá (Review)</option>
+                    <option :value="3">Hoàn thành (Done)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="deadline">Hạn chót</label>
+                  <input id="deadline" v-model="formData.deadline" type="datetime-local" />
+                </div>
+              </div>
+            </div>
             
+            <!-- Main actions buttons -->
             <div class="modal-actions">
+              <button v-if="isEdit" type="button" class="btn-delete" @click="deleteTask" :disabled="loading">
+                Xóa tác vụ
+              </button>
               <button type="button" class="btn-cancel" @click="closeModal">Hủy</button>
               <button type="submit" class="btn-submit" :disabled="loading">
-                {{ loading ? 'Đang lưu...' : 'Lưu tác vụ' }}
-              </button>
-              <button v-if="isEdit" type="button" class="btn-delete" @click="deleteTask" :disabled="loading">
-                Xóa
+                {{ loading ? 'Đang lưu...' : (isEdit ? 'Lưu thay đổi' : 'Tạo tác vụ') }}
               </button>
             </div>
           </form>
         </div>
 
-        <div v-if="isEdit" class="task-discussion-container">
-          <div class="task-modal-tabs">
-            <button 
-              type="button" 
-              class="tab-btn" 
-              :class="{ active: activeTab === 'discussion' }"
-              @click="activeTab = 'discussion'"
-            >
-              Thảo luận
-            </button>
-            <button 
-              type="button" 
-              class="tab-btn" 
-              :class="{ active: activeTab === 'activities' }"
-              @click="activeTab = 'activities'"
-            >
-              Hoạt động
-            </button>
+        <!-- 2. RIGHT COLUMN: Properties Sidebar & Activity Feed (Edit Mode only) -->
+        <div class="task-right-section" v-if="isEdit">
+          <!-- Properties Panel Card -->
+          <div class="properties-panel-card glass-panel">
+            <h3 class="panel-section-title">Thuộc tính tác vụ</h3>
+            <div class="properties-grid">
+              <!-- Assignee property -->
+              <div class="prop-item">
+                <span class="prop-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  Phân công
+                </span>
+                <div class="prop-value">
+                  <div class="assignee-select-wrapper">
+                    <select v-model="formData.assigneeId">
+                      <option value="">Chưa phân công</option>
+                      <option v-for="m in projectMembers" :key="m.userId || m.id" :value="m.userId || m.id">
+                        {{ m.displayName }}
+                      </option>
+                    </select>
+                    <button type="button" class="btn-assign-me-tiny" @click="assignToMe" title="Giao cho tôi">Tôi</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Status property -->
+              <div class="prop-item">
+                <span class="prop-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  Trạng thái
+                </span>
+                <div class="prop-value">
+                  <select v-model="formData.currentStatus">
+                    <option :value="0">Cần làm (To Do)</option>
+                    <option :value="1">Đang làm (In Progress)</option>
+                    <option :value="2">Đánh giá (Review)</option>
+                    <option :value="3">Hoàn thành (Done)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Priority property -->
+              <div class="prop-item">
+                <span class="prop-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  </svg>
+                  Độ ưu tiên
+                </span>
+                <div class="prop-value">
+                  <select v-model="formData.priority" :class="`prio-select-${formData.priority}`">
+                    <option :value="0">Thấp (Low)</option>
+                    <option :value="1">Trung bình (Medium)</option>
+                    <option :value="2">Cao (High)</option>
+                    <option :value="3">Khẩn cấp (Urgent)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Deadline property -->
+              <div class="prop-item">
+                <span class="prop-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  Hạn chót
+                </span>
+                <div class="prop-value">
+                  <input v-model="formData.deadline" type="datetime-local" class="prop-deadline-input" />
+                  <div class="quick-dates-tiny">
+                    <button type="button" @click="setDeadlineDays(0)">Hôm nay</button>
+                    <button type="button" @click="setDeadlineDays(3)">3 ngày</button>
+                    <button type="button" @click="setDeadlineDays(7)">1 tuần</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Color label property -->
+              <div class="prop-item">
+                <span class="prop-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                  </svg>
+                  Nhãn màu
+                </span>
+                <div class="prop-value">
+                  <input v-model="formData.colorLabel" type="color" class="prop-color-input" />
+                </div>
+              </div>
+            </div>
           </div>
-          
-          <div v-if="activeTab === 'discussion'" class="tab-pane">
-            <TaskDiscussion :task-id="formData.taskId" />
-          </div>
-          <div v-else-if="activeTab === 'activities'" class="tab-pane">
-            <ActivityLogList :task-id="formData.taskId" />
+
+          <!-- Activity log tabs & Feed -->
+          <div class="activity-feed-container">
+            <div class="task-modal-tabs">
+              <button 
+                type="button" 
+                class="tab-btn" 
+                :class="{ active: activeTab === 'discussion' }"
+                @click="activeTab = 'discussion'"
+              >
+                Thảo luận
+              </button>
+              <button 
+                type="button" 
+                class="tab-btn" 
+                :class="{ active: activeTab === 'activities' }"
+                @click="activeTab = 'activities'"
+              >
+                Nhật ký hoạt động
+              </button>
+            </div>
+            
+            <div class="feed-body-pane">
+              <div v-if="activeTab === 'discussion'" class="tab-pane">
+                <TaskDiscussion :task-id="formData.taskId" />
+              </div>
+              <div v-else-if="activeTab === 'activities'" class="tab-pane">
+                <ActivityLogList :task-id="formData.taskId" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -205,7 +305,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted, defineProps, defineEmits } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import TaskDiscussion from './task/TaskDiscussion.vue';
 import ActivityLogList from './common/ActivityLogList.vue';
 import { useProjectStore } from '../stores/projects';
@@ -244,6 +344,21 @@ const formData = ref({
 
 onMounted(async () => {
   await projectStore.loadProjects();
+});
+
+// Dynamic Breadcrumbs
+const projectName = computed(() => {
+  const p = projectStore.projects.find(proj => proj.id === formData.value.boardId);
+  return p ? p.name : 'Dự án';
+});
+
+const taskCode = computed(() => {
+  if (formData.value.taskId) {
+    const idStr = String(formData.value.taskId);
+    const short = idStr.substring(idStr.length - 4).toUpperCase();
+    return `T-${short}`;
+  }
+  return 'T-TASK';
 });
 
 watch(() => formData.value.boardId, async (newVal) => {
@@ -417,14 +532,14 @@ const deleteTask = () => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  animation: fadeIn 0.25s ease;
+  animation: fadeIn 0.2s ease;
 }
 
 @keyframes fadeIn {
@@ -434,59 +549,26 @@ const deleteTask = () => {
 
 .modal-content {
   width: 95%;
-  max-width: 520px;
-  background: var(--bg-white-to-card);
+  max-width: 540px;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-xl), var(--shadow-3d-card);
   border-radius: var(--radius-xl);
   padding: 24px;
-  max-height: 90vh;
+  max-height: 92vh;
   overflow-y: auto;
-  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   transition: max-width 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-large {
-  max-width: 950px;
-}
-
-.modal-body.with-discussion {
-  display: flex;
-  gap: 28px;
-}
-
-@media (max-width: 768px) {
-  .modal-body.with-discussion {
-    flex-direction: column;
-    gap: 20px;
-  }
-}
-
-.task-form-container {
-  flex: 1.1;
-  min-width: 0;
-}
-
-.task-discussion-container {
-  flex: 0.9;
-  border-left: 1px solid var(--border-color);
-  padding-left: 28px;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-@media (max-width: 768px) {
-  .task-discussion-container {
-    border-left: none;
-    padding-left: 0;
-    border-top: 1px solid var(--border-color);
-    padding-top: 20px;
-  }
+  max-width: 1020px;
 }
 
 @keyframes slideUp {
-  from { transform: translateY(24px); opacity: 0; }
+  from { transform: translateY(16px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
@@ -494,20 +576,43 @@ const deleteTask = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: var(--space-4);
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 12px;
+  padding-bottom: var(--space-3);
 }
 
-.modal-header h2 {
-  font-size: var(--font-size-lg);
+.modal-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.modal-breadcrumbs .project-crumb {
+  color: var(--color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.modal-breadcrumbs .divider {
+  color: var(--border-color);
+}
+
+.modal-breadcrumbs .task-crumb {
+  color: var(--text-primary);
+}
+
+.create-title {
+  font-size: var(--font-size-md);
   font-weight: 800;
-  color: var(--color-text-primary);
+  color: var(--text-primary);
 }
 
 .close-btn {
-  font-size: 1.6rem;
-  color: var(--color-text-tertiary);
+  font-size: 1.8rem;
+  color: var(--text-muted);
   transition: color var(--transition-fast);
   background: none;
   border: none;
@@ -515,36 +620,81 @@ const deleteTask = () => {
 }
 
 .close-btn:hover {
-  color: var(--color-text-primary);
+  color: var(--text-primary);
 }
 
-.form-group {
-  margin-bottom: 18px;
+/* Redesigned grid in Edit Mode */
+.modal-body {
   display: flex;
   flex-direction: column;
+  gap: var(--space-4);
 }
 
-.form-row {
-  display: flex;
-  gap: 16px;
+.modal-body.edit-mode-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: var(--space-6);
 }
 
-@media (max-width: 480px) {
-  .form-row {
-    flex-direction: column;
-    gap: 0;
+@media (max-width: 768px) {
+  .modal-body.edit-mode-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
   }
 }
 
-.form-row .form-group {
-  flex: 1;
+.task-left-section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.task-right-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  border-left: 1px solid var(--border-color);
+  padding-left: var(--space-5);
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .task-right-section {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--border-color);
+    padding-top: var(--space-4);
+  }
+}
+
+/* Edit Mode Large Title */
+.title-large {
+  font-size: var(--font-size-lg) !important;
+  font-weight: 800 !important;
+  border-bottom: 1px dashed var(--border-color) !important;
+  background: transparent !important;
+  padding: var(--space-2) 0 !important;
+  border-radius: 0 !important;
+  color: var(--text-primary) !important;
+  border: none !important;
+}
+
+.title-large:focus {
+  border-bottom-color: var(--color-primary) !important;
+  box-shadow: none !important;
+}
+
+.form-group {
+  margin-bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
 }
 
 label {
   font-size: var(--font-size-xs);
   font-weight: 700;
-  margin-bottom: 8px;
-  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -554,18 +704,12 @@ select,
 textarea {
   background: var(--color-bg-secondary);
   border: 1px solid var(--border-color);
-  color: var(--color-text-primary);
+  color: var(--text-primary);
   padding: 10px 14px;
   border-radius: var(--radius-md);
   font-family: inherit;
   font-size: var(--font-size-sm);
   transition: all var(--transition-fast);
-}
-
-[data-theme='dark'] input[type="text"],
-[data-theme='dark'] select,
-[data-theme='dark'] textarea {
-  background: rgba(15, 23, 42, 0.4);
 }
 
 input:focus, select:focus, textarea:focus {
@@ -574,92 +718,17 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
-input[type="datetime-local"] {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--border-color);
-  color: var(--color-text-primary);
-  padding: 8px 12px;
-  border-radius: var(--radius-md);
-  font-family: inherit;
-  font-size: var(--font-size-sm);
-}
-
-[data-theme='dark'] input[type="datetime-local"] {
-  background: rgba(15, 23, 42, 0.4);
-}
-
-input[type="color"] {
-  height: 40px;
-  padding: 4px;
-  width: 100%;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  background: transparent;
-  cursor: pointer;
-}
-
-/* Assignee input specific integration */
-.assignee-select-wrapper {
-  display: flex;
-  gap: 8px;
-}
-
-.assignee-select-wrapper select {
-  flex: 1;
-}
-
-.btn-assign-me {
-  padding: 0 14px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  background: var(--color-bg-secondary);
-  color: var(--color-text-primary);
-  font-weight: 700;
-  font-size: var(--font-size-xs);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.btn-assign-me:hover {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  border-color: rgba(37, 99, 235, 0.2);
-}
-
-/* Quick dates helpers */
-.quick-dates {
-  display: flex;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.btn-quick-date {
-  background: transparent;
-  border: none;
-  color: var(--color-primary);
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 2px 4px;
-  transition: opacity 0.2s;
-}
-
-.btn-quick-date:hover {
-  text-decoration: underline;
-  opacity: 0.85;
-}
-
-/* Subtasks Checklist Styles */
+/* Subtasks styling */
 .subtasks-group {
   border-top: 1px dashed var(--border-color);
-  padding-top: 18px;
-  margin-top: 24px;
+  padding-top: var(--space-4);
+  margin-top: var(--space-3);
 }
 
 .subtask-input-wrapper {
   display: flex;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: var(--space-3);
 }
 
 .subtask-input-wrapper input {
@@ -667,43 +736,36 @@ input[type="color"] {
 }
 
 .btn-add-subtask {
-  padding: 0 16px;
+  padding: 0 var(--space-4);
   border-radius: var(--radius-md);
   background: var(--color-primary);
   color: white;
   font-weight: 700;
-  font-size: var(--font-size-sm);
-  border: none;
+  font-size: var(--font-size-xs);
   cursor: pointer;
-  transition: background var(--transition-fast);
 }
-
 .btn-add-subtask:hover {
   background: var(--color-primary-hover);
 }
 
 .subtasks-progress {
-  margin-bottom: 14px;
+  margin-bottom: var(--space-3);
 }
 
 .progress-info {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
-  color: var(--color-text-secondary);
+  font-size: 10px;
+  color: var(--text-secondary);
   font-weight: 700;
   margin-bottom: 4px;
 }
 
 .progress-track {
-  height: 6px;
+  height: 5px;
   background: var(--color-bg-secondary);
   border-radius: var(--radius-full);
   overflow: hidden;
-}
-
-[data-theme='dark'] .progress-track {
-  background: rgba(255, 255, 255, 0.05);
 }
 
 .progress-fill {
@@ -716,44 +778,32 @@ input[type="color"] {
 .subtask-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-height: 180px;
+  gap: var(--space-2);
+  max-height: 140px;
   overflow-y: auto;
-  margin-bottom: 12px;
-  padding-right: 4px;
+  margin-bottom: var(--space-3);
 }
 
 .subtask-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 8px 10px;
   background: var(--color-bg-secondary);
   border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  transition: border-color 0.2s;
-}
-
-[data-theme='dark'] .subtask-item {
-  background: rgba(15, 23, 42, 0.2);
-}
-
-.subtask-item:hover {
-  border-color: var(--border-color);
 }
 
 .subtask-checkbox-label {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
-  margin: 0;
-  flex: 1;
   text-transform: none;
-  letter-spacing: normal;
   font-weight: normal;
+  letter-spacing: normal;
+  margin-bottom: 0;
   font-size: var(--font-size-sm);
-  color: var(--color-text-primary);
+  color: var(--text-primary);
 }
 
 .subtask-checkbox-label input {
@@ -761,13 +811,12 @@ input[type="color"] {
 }
 
 .custom-checkbox {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 4px;
   border: 2px solid var(--border-color);
   display: inline-block;
   position: relative;
-  transition: all 0.2s;
   flex-shrink: 0;
 }
 
@@ -779,100 +828,283 @@ input[type="color"] {
 .subtask-checkbox-label input:checked + .custom-checkbox::after {
   content: '';
   position: absolute;
-  left: 5px;
-  top: 2px;
-  width: 5px;
-  height: 9px;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
   border: solid white;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
 
-.subtask-title-text {
-  transition: color 0.2s;
-}
-
 .subtask-title-text.line-through {
   text-decoration: line-through;
-  color: var(--color-text-tertiary);
+  color: var(--text-muted);
 }
 
 .btn-remove-subtask {
-  background: none;
-  border: none;
-  color: var(--color-text-tertiary);
-  font-size: 1.2rem;
+  font-size: 1.1rem;
+  color: var(--text-muted);
   cursor: pointer;
-  padding: 0 4px;
-  transition: color 0.2s;
 }
-
 .btn-remove-subtask:hover {
   color: var(--color-danger);
 }
 
 .auto-sync-toggle {
-  display: flex;
-  align-items: center;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .toggle-label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 11px;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--text-muted);
   font-weight: 600;
-  color: var(--color-text-secondary);
-  cursor: pointer;
   text-transform: none;
   letter-spacing: normal;
-}
-
-.toggle-label input {
   cursor: pointer;
 }
 
-/* Modal actions spacing */
+/* Create mode fields layout */
+.create-mode-attributes {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-row {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.assignee-select-wrapper {
+  display: flex;
+  gap: 6px;
+}
+.assignee-select-wrapper select {
+  flex: 1;
+}
+
+.btn-assign-me {
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--color-bg-secondary);
+  color: var(--text-primary);
+}
+
+.btn-assign-me:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+/* Sidebar properties styling */
+.properties-panel-card {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+}
+
+.panel-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.8px;
+  margin-bottom: var(--space-3);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.properties-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prop-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.prop-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold);
+  width: 100px;
+  flex-shrink: 0;
+}
+
+.prop-value {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.prop-value select,
+.prop-value input {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  border: 1px solid var(--border-color);
+  background: var(--color-bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  max-width: 180px;
+}
+
+.prio-select-3 { border-color: rgba(239, 68, 68, 0.3) !important; color: #ef4444 !important; }
+.prio-select-2 { border-color: rgba(245, 158, 11, 0.3) !important; color: #d97706 !important; }
+.prio-select-1 { border-color: rgba(59, 130, 246, 0.3) !important; color: #3b82f6 !important; }
+.prio-select-0 { border-color: var(--border-color) !important; color: var(--text-muted) !important; }
+
+.prop-deadline-input {
+  max-width: 180px;
+}
+
+.quick-dates-tiny {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  justify-content: flex-end;
+}
+.quick-dates-tiny button {
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: transparent;
+  cursor: pointer;
+}
+.quick-dates-tiny button:hover {
+  text-decoration: underline;
+}
+
+.prop-color-input {
+  width: 44px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.btn-assign-me-tiny {
+  height: 32px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  font-size: 9px;
+  font-weight: 700;
+  border: 1px solid var(--border-color);
+  background: var(--color-bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.btn-assign-me-tiny:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* Activity logs and feed layout */
+.activity-feed-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 280px;
+}
+
+.task-modal-tabs {
+  display: flex;
+  gap: 14px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: var(--space-3);
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  padding: 6px 2px;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.feed-body-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 220px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.tab-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Modal Actions buttons styles */
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 32px;
+  gap: 10px;
+  margin-top: var(--space-6);
   border-top: 1px solid var(--border-color);
-  padding-top: 16px;
+  padding-top: var(--space-4);
 }
 
 .btn-cancel, .btn-submit, .btn-delete {
-  padding: 10px 20px;
+  padding: 8px 16px;
   border-radius: var(--radius-md);
   font-weight: 700;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .btn-cancel {
   background: transparent;
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
   border: 1px solid var(--border-color);
 }
-
 .btn-cancel:hover {
   background: var(--color-bg-secondary);
-  color: var(--color-text-primary);
 }
 
 .btn-submit {
   background: var(--color-primary);
   color: white;
   border: none;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
-
-.btn-submit:hover:not(:disabled) {
+.btn-submit:hover {
   background: var(--color-primary-hover);
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
 }
 
 .btn-delete {
@@ -881,51 +1113,8 @@ input[type="color"] {
   border: 1px solid var(--color-danger);
   margin-right: auto;
 }
-
-.btn-delete:hover:not(:disabled) {
+.btn-delete:hover {
   background: var(--color-danger);
   color: white;
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-/* Discussion tabs design */
-.task-modal-tabs {
-  display: flex;
-  gap: 16px;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 16px;
-}
-
-.tab-btn {
-  background: transparent;
-  border: none;
-  padding: 8px 4px;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all var(--transition-fast);
-}
-
-.tab-btn:hover {
-  color: var(--color-text-primary);
-}
-
-.tab-btn.active {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
-}
-
-.tab-pane {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
 }
 </style>

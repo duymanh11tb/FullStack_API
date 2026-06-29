@@ -414,7 +414,7 @@ const formatDetail = (detailText) => {
   color: var(--text-secondary);
   margin-top: var(--space-3);
   line-height: var(--line-height-relaxed);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--color-bg-secondary);
   padding: var(--space-3);
   border-radius: var(--radius-md);
   border-left: 3px solid var(--color-primary-light);
