@@ -14,14 +14,14 @@ public class NotificationHub : Hub
         
         if (!string.IsNullOrEmpty(userIdQuery))
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, userIdQuery);
+            await Groups.AddToGroupAsync(Context.ConnectionId, userIdQuery.ToLower());
         }
         
         // Also map standard NameIdentifier claim
         var userClaimId = Context.UserIdentifier;
         if (!string.IsNullOrEmpty(userClaimId))
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, userClaimId);
+            await Groups.AddToGroupAsync(Context.ConnectionId, userClaimId.ToLower());
         }
 
         await base.OnConnectedAsync();
@@ -34,13 +34,13 @@ public class NotificationHub : Hub
         
         if (!string.IsNullOrEmpty(userIdQuery))
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, userIdQuery);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, userIdQuery.ToLower());
         }
         
         var userClaimId = Context.UserIdentifier;
         if (!string.IsNullOrEmpty(userClaimId))
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, userClaimId);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, userClaimId.ToLower());
         }
 
         await base.OnDisconnectedAsync(exception);

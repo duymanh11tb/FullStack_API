@@ -218,7 +218,7 @@ public class NotificationEventService : INotificationEventService
             {
                 try
                 {
-                    await _hubContext.Clients.Group(notif.UserId.ToString()).SendAsync("ReceiveNotification", new
+                    await _hubContext.Clients.Group(notif.UserId.ToString().ToLower()).SendAsync("ReceiveNotification", new
                     {
                         id = notif.Id,
                         userId = notif.UserId,
@@ -275,7 +275,7 @@ public class NotificationEventService : INotificationEventService
         {
             try
             {
-                await _hubContext.Clients.Group(notif.UserId.ToString()).SendAsync("ReceiveNotification", new
+                await _hubContext.Clients.Group(notif.UserId.ToString().ToLower()).SendAsync("ReceiveNotification", new
                 {
                     id = notif.Id,
                     userId = notif.UserId,
@@ -345,7 +345,7 @@ public class NotificationEventService : INotificationEventService
         {
             try
             {
-                await _hubContext.Clients.Group(notif.UserId.ToString()).SendAsync("ReceiveNotification", new
+                await _hubContext.Clients.Group(notif.UserId.ToString().ToLower()).SendAsync("ReceiveNotification", new
                 {
                     id = notif.Id,
                     userId = notif.UserId,

@@ -356,7 +356,7 @@ public class AuthController : ControllerBase
             
             try
             {
-                await _hubContext.Clients.Group(user.Id.ToString()).SendAsync("ReceiveNotification", new
+                await _hubContext.Clients.Group(user.Id.ToString().ToLower()).SendAsync("ReceiveNotification", new
                 {
                     id = notification.Id,
                     userId = notification.UserId,
