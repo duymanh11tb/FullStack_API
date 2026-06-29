@@ -5,7 +5,7 @@
         <h1>Dự án</h1>
         <p class="subtitle">Quản lý và cộng tác trên tất cả dự án hệ thống</p>
       </div>
-      <BaseButton v-if="isAdmin" variant="primary" @click="showCreateModal = true" id="btn-create-project">
+      <BaseButton v-if="isAdmin || isManager" variant="primary" @click="showCreateModal = true" id="btn-create-project">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="12" y1="5" x2="12" y2="19" />
           <line x1="5" y1="12" x2="19" y2="12" />
@@ -90,7 +90,7 @@
       title="Chưa có dự án nào"
       description="Không tìm thấy dự án nào khớp với bộ lọc hoặc bạn chưa được thêm vào dự án nào."
     >
-      <BaseButton v-if="isAdmin" variant="primary" class="mt-4" @click="showCreateModal = true">
+      <BaseButton v-if="isAdmin || isManager" variant="primary" class="mt-4" @click="showCreateModal = true">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 4px;">
           <line x1="12" y1="5" x2="12" y2="19" />
           <line x1="5" y1="12" x2="19" y2="12" />
@@ -152,6 +152,7 @@ import SkeletonLoader from '../components/common/SkeletonLoader.vue'
 const projectStore = useProjectStore()
 const authStore = useAuthStore()
 const isAdmin = computed(() => authStore.isAdmin)
+const isManager = computed(() => authStore.isManager)
 const showCreateModal = ref(false)
 const creating = ref(false)
 const formError = ref('')
