@@ -117,6 +117,10 @@ public class AuthController : ControllerBase
                 u.Username,
                 u.Email,
                 u.FullName,
+                u.AvatarUrl,
+                u.JobTitle,
+                u.Department,
+                u.Bio,
                 u.Role,
                 u.CreatedAt
             })
@@ -128,6 +132,82 @@ public class AuthController : ControllerBase
         }
 
         return Ok(user);
+    }
+
+    [Authorize]
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+    {
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found." });
+        }
+
+        user.FullName = request.FullName;
+        user.AvatarUrl = request.AvatarUrl;
+        user.JobTitle = request.JobTitle;
+        user.Department = request.Department;
+        user.Bio = request.Bio;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { Message = "Profile updated successfully." });
+    }
+
+    [Authorize]
+    [HttpPut("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found." });
+        }
+
+        if (!VerifyPassword(request.OldPassword, user.PasswordHash))
+        {
+            return BadRequest(new { Message = "Mật khẩu hiện tại không chính xác." });
+        }
+
+        user.PasswordHash = HashPassword(request.NewPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { Message = "Password changed successfully." });
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email || u.Username == request.Email);
+        if (user == null)
+        {
+            return NotFound(new { Message = "Tài khoản với email hoặc tên đăng nhập này không tồn tại." });
+        }
+
+        // For demo, reset to a default temporary password
+        var tempPassword = "TempPassword123!";
+        user.PasswordHash = HashPassword(tempPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { Message = "Khôi phục mật khẩu thành công.", TempPassword = tempPassword });
     }
 
     [Authorize]
@@ -625,4 +705,24 @@ public class UpdateUserRequest
     public UserRole Role { get; set; } = UserRole.User;
     public bool IsActive { get; set; } = true;
     public string? Password { get; set; }
+}
+
+public class UpdateProfileRequest
+{
+    public string FullName { get; set; } = string.Empty;
+    public string? AvatarUrl { get; set; }
+    public string? JobTitle { get; set; }
+    public string? Department { get; set; }
+    public string? Bio { get; set; }
+}
+
+public class ChangePasswordRequest
+{
+    public string OldPassword { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+}
+
+public class ForgotPasswordRequest
+{
+    public string Email { get; set; } = string.Empty;
 }

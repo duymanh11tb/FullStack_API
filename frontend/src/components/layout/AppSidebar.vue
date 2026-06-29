@@ -68,6 +68,10 @@
           </svg>
           <span>Quản trị viên</span>
         </router-link>
+      </div>
+
+      <div class="nav-section">
+        <span class="nav-section-title">CÀI ĐẶT</span>
 
         <router-link to="/settings" class="nav-item" :class="{ active: isActive('/settings') }" id="nav-settings">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

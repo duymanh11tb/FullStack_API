@@ -63,3 +63,13 @@ export const getActivityLogsByTask = (taskId) =>
 export const getActivityLogsByUser = (userId) =>
   notifyAPI.get(`/api/ActivityLog/user/${userId}`)
 
+// ── Profile and Security ──
+export const updateProfile = (data) =>
+  notifyAPI.put('/api/Auth/profile', data)
+
+export const changePassword = (data) =>
+  notifyAPI.put('/api/Auth/change-password', data)
+
+export const forgotPassword = (data) =>
+  notifyAPI.post('/api/Auth/forgot-password', data)
+

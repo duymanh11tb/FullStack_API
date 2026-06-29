@@ -66,121 +66,194 @@
     <!-- Right Panel: Login Form -->
     <div class="form-panel">
       <div class="auth-card">
-        <div class="auth-header">
-          <h1>Đăng nhập hệ thống</h1>
-          <p class="auth-subtitle">Vui lòng nhập thông tin tài khoản của bạn để tiếp tục.</p>
-        </div>
+        <!-- 1. LOGIN CARD VIEW -->
+        <div v-if="!forgotMode">
+          <div class="auth-header">
+            <h1>Đăng nhập hệ thống</h1>
+            <p class="auth-subtitle">Vui lòng nhập thông tin tài khoản của bạn để tiếp tục.</p>
+          </div>
 
-        <form @submit.prevent="handleLogin" class="auth-form">
-          <transition name="fade">
-            <div v-if="authStore.error" class="alert alert-error">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <span>{{ authStore.error }}</span>
-            </div>
-          </transition>
-
-          <!-- Email / Username Input -->
-          <div class="custom-form-group">
-            <label class="custom-label">EMAIL</label>
-            <div class="input-wrapper">
-              <span class="input-icon">
+          <form @submit.prevent="handleLogin" class="auth-form">
+            <transition name="fade">
+              <div v-if="authStore.error" class="alert alert-error">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span>{{ authStore.error }}</span>
+              </div>
+            </transition>
+
+            <!-- Email / Username Input -->
+            <div class="custom-form-group">
+              <label class="custom-label">EMAIL</label>
+              <div class="input-wrapper">
+                <span class="input-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                </span>
+                <input
+                  type="text"
+                  v-model="form.usernameOrEmail"
+                  placeholder="example@protask.com"
+                  required
+                  class="custom-input"
+                  id="input-login-username"
+                />
+              </div>
+            </div>
+
+            <!-- Password Input -->
+            <div class="custom-form-group">
+              <label class="custom-label">MẬT KHẨU</label>
+              <div class="input-wrapper">
+                <span class="input-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </span>
+                <input
+                  :type="showPassword ? 'text' : 'password'"
+                  v-model="form.password"
+                  placeholder="••••••••"
+                  required
+                  class="custom-input"
+                  id="input-login-password"
+                />
+                <button type="button" @click="showPassword = !showPassword" class="password-toggle-btn" title="Hiển thị mật khẩu">
+                  <svg v-if="showPassword" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Checkbox / Forgot row -->
+            <div class="form-options">
+              <label class="checkbox-container">
+                <input type="checkbox" v-model="rememberMe" />
+                <span class="checkmark"></span>
+                <span class="checkbox-label">Ghi nhớ đăng nhập</span>
+              </label>
+              <a href="#" @click.prevent="forgotMode = true" class="forgot-link">Quên mật khẩu?</a>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn-submit-blue" :disabled="authStore.loading">
+              <span v-if="authStore.loading">Đang đăng nhập...</span>
+              <span v-else class="btn-text-flex">
+                Đăng nhập
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="btn-arrow-icon">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
                 </svg>
               </span>
-              <input
-                type="text"
-                v-model="form.usernameOrEmail"
-                placeholder="example@protask.com"
-                required
-                class="custom-input"
-                id="input-login-username"
-              />
-            </div>
+            </button>
+          </form>
+
+          <!-- Social Separator -->
+          <div class="social-separator">
+            <span class="separator-text">HOẶC ĐĂNG NHẬP VỚI</span>
           </div>
 
-          <!-- Password Input -->
-          <div class="custom-form-group">
-            <label class="custom-label">MẬT KHẨU</label>
-            <div class="input-wrapper">
-              <span class="input-icon">
+          <!-- Social Buttons Grid -->
+          <div class="social-grid">
+            <button type="button" @click="loginWithGoogle" class="btn-social">
+              <img src="https://img.icons8.com/color/16/000000/google-logo.png" alt="Google" class="social-icon-img" />
+              Google
+            </button>
+            <button type="button" @click="loginWithGithub" class="btn-social">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #24292e;">
+                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+              </svg>
+              GitHub
+            </button>
+          </div>
+
+          <!-- Footer Link -->
+          <div class="auth-footer">
+            <span class="footer-text">Bạn chưa có tài khoản?</span>
+            <router-link to="/register" class="footer-link">Đăng ký tài khoản mới</router-link>
+          </div>
+        </div>
+
+        <!-- 2. FORGOT PASSWORD VIEW -->
+        <div v-else>
+          <div class="auth-header">
+            <h1>Khôi phục mật khẩu</h1>
+            <p class="auth-subtitle">Nhập email hoặc tên tài khoản của bạn để nhận mật khẩu tạm thời.</p>
+          </div>
+
+          <form @submit.prevent="handleForgotPassword" class="auth-form">
+            <transition name="fade">
+              <div v-if="forgotSuccessMsg" class="alert alert-success">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <span>{{ forgotSuccessMsg }}</span>
+              </div>
+              <div v-else-if="forgotErrorMsg" class="alert alert-error">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span>{{ forgotErrorMsg }}</span>
+              </div>
+            </transition>
+
+            <div v-if="!tempPasswordReceived" class="custom-form-group">
+              <label class="custom-label">EMAIL HOẶC TÊN TÀI KHOẢN</label>
+              <div class="input-wrapper">
+                <span class="input-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                </span>
+                <input
+                  type="text"
+                  v-model="forgotEmail"
+                  placeholder="Nhập email hoặc username..."
+                  required
+                  class="custom-input"
+                />
+              </div>
+            </div>
+
+            <div v-else class="temp-password-box">
+              <p class="temp-label">Mật khẩu tạm thời mới của bạn là:</p>
+              <div class="temp-code-wrapper">
+                <span class="temp-code">{{ tempPasswordReceived }}</span>
+                <button type="button" class="btn-copy" @click="copyTempPassword">
+                  Sao chép
+                </button>
+              </div>
+              <p class="temp-desc">Vui lòng đăng nhập bằng mật khẩu này và đổi lại mật khẩu trong trang Cài đặt.</p>
+            </div>
+
+            <button v-if="!tempPasswordReceived" type="submit" class="btn-submit-blue" :disabled="loadingForgot">
+              <span v-if="loadingForgot">Đang gửi yêu cầu...</span>
+              <span v-else class="btn-text-flex">
+                Gửi yêu cầu khôi phục
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="btn-arrow-icon">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
                 </svg>
               </span>
-              <input
-                :type="showPassword ? 'text' : 'password'"
-                v-model="form.password"
-                placeholder="••••••••"
-                required
-                class="custom-input"
-                id="input-login-password"
-              />
-              <button type="button" @click="showPassword = !showPassword" class="password-toggle-btn" title="Hiển thị mật khẩu">
-                <svg v-if="showPassword" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                  <line x1="1" y1="1" x2="23" y2="23" />
-                </svg>
-                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              </button>
-            </div>
-          </div>
+            </button>
 
-          <!-- Checkbox / Forgot row -->
-          <div class="form-options">
-            <label class="checkbox-container">
-              <input type="checkbox" v-model="rememberMe" />
-              <span class="checkmark"></span>
-              <span class="checkbox-label">Ghi nhớ đăng nhập</span>
-            </label>
-            <a href="#" class="forgot-link">Quên mật khẩu?</a>
-          </div>
-
-          <!-- Submit Button -->
-          <button type="submit" class="btn-submit-blue" :disabled="authStore.loading">
-            <span v-if="authStore.loading">Đang đăng nhập...</span>
-            <span v-else class="btn-text-flex">
-              Đăng nhập
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="btn-arrow-icon">
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
-            </span>
-          </button>
-        </form>
-
-        <!-- Social Separator -->
-        <div class="social-separator">
-          <span class="separator-text">HOẶC ĐĂNG NHẬP VỚI</span>
-        </div>
-
-        <!-- Social Buttons Grid -->
-        <div class="social-grid">
-          <button type="button" @click="loginWithGoogle" class="btn-social">
-            <img src="https://img.icons8.com/color/16/000000/google-logo.png" alt="Google" class="social-icon-img" />
-            Google
-          </button>
-          <button type="button" @click="loginWithGithub" class="btn-social">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #24292e;">
-              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-            </svg>
-            GitHub
-          </button>
-        </div>
-
-        <!-- Footer Link -->
-        <div class="auth-footer">
-          <span class="footer-text">Bạn chưa có tài khoản?</span>
-          <router-link to="/register" class="footer-link">Đăng ký tài khoản mới</router-link>
+            <button type="button" class="btn-back-login" @click="backToLogin">
+              Quay lại đăng nhập
+            </button>
+          </form>
         </div>
       </div>
     </div>
@@ -191,6 +264,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { forgotPassword } from '../api/notifyApi'
 import axios from 'axios'
 
 const router = useRouter()
@@ -204,6 +278,45 @@ const form = reactive({
   usernameOrEmail: '',
   password: ''
 })
+
+// Forgot Password recovery states
+const forgotMode = ref(false)
+const forgotEmail = ref('')
+const loadingForgot = ref(false)
+const forgotSuccessMsg = ref('')
+const forgotErrorMsg = ref('')
+const tempPasswordReceived = ref('')
+
+async function handleForgotPassword() {
+  loadingForgot.value = true
+  forgotSuccessMsg.value = ''
+  forgotErrorMsg.value = ''
+  tempPasswordReceived.value = ''
+  try {
+    const res = await forgotPassword({ email: forgotEmail.value })
+    forgotSuccessMsg.value = res.data.message || 'Yêu cầu khôi phục thành công!'
+    tempPasswordReceived.value = res.data.tempPassword || ''
+  } catch (err) {
+    forgotErrorMsg.value = err.response?.data?.message || 'Khôi phục mật khẩu thất bại.'
+  } finally {
+    loadingForgot.value = false
+  }
+}
+
+function backToLogin() {
+  forgotMode.value = false
+  forgotEmail.value = ''
+  forgotSuccessMsg.value = ''
+  forgotErrorMsg.value = ''
+  tempPasswordReceived.value = ''
+}
+
+function copyTempPassword() {
+  if (tempPasswordReceived.value) {
+    navigator.clipboard.writeText(tempPasswordReceived.value)
+    alert('Đã sao chép mật khẩu tạm thời vào clipboard!')
+  }
+}
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '919341718553-lsbmr6rfflptpbmckpbht0h4b1iccjj9.apps.googleusercontent.com'
 const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || 'Ov23lirIaP5cgYJ7mvKt'
@@ -733,6 +846,90 @@ async function handleLogin() {
   background: #fee2e2;
   color: #ef4444;
   border-color: rgba(239, 68, 68, 0.2);
+}
+
+.alert-success {
+  background: #dcfce7;
+  color: #16a34a;
+  border-color: rgba(22, 163, 74, 0.2);
+}
+
+/* Forgot Password Card Styling */
+.temp-password-box {
+  text-align: center;
+  padding: 20px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.temp-label {
+  font-size: 0.85rem;
+  color: #475569;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.temp-code-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.temp-code {
+  background: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: 1px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.btn-copy {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-copy:hover {
+  background: #1d4ed8;
+}
+
+.temp-desc {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.btn-back-login {
+  width: 100%;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-back-login:hover {
+  background: #f1f5f9;
+  color: #0f172a;
 }
 
 .fade-enter-active, .fade-leave-active {

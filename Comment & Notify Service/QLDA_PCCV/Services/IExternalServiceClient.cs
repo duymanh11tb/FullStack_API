@@ -18,6 +18,7 @@ namespace QLDA_PCCV.Services
         public Guid TaskId { get; set; }
         public Guid BoardId { get; set; } // maps to ProjectId
         public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
         public Guid? AssigneeId { get; set; }
     }
 

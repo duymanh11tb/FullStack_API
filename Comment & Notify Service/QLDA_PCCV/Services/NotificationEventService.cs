@@ -19,11 +19,13 @@ public class NotificationEventService : INotificationEventService
 {
     private readonly AppDbContext _context;
     private readonly IHubContext<NotificationHub> _hubContext;
+    private readonly IExternalServiceClient _externalServiceClient;
 
-    public NotificationEventService(AppDbContext context, IHubContext<NotificationHub> hubContext)
+    public NotificationEventService(AppDbContext context, IHubContext<NotificationHub> hubContext, IExternalServiceClient externalServiceClient)
     {
         _context = context;
         _hubContext = hubContext;
+        _externalServiceClient = externalServiceClient;
     }
 
     public async Task<NotificationEventResult> ConsumeAsync(NotificationEventRequest request, CancellationToken cancellationToken = default)
@@ -37,6 +39,204 @@ public class NotificationEventService : INotificationEventService
         if (referenceId == Guid.Empty)
         {
             return NotificationEventResult.Invalid($"Reference id is required for {referenceType} events.");
+        }
+
+        if (notificationType == NotificationType.TaskAssigned)
+        {
+            var taskId = request.TaskId ?? referenceId;
+            var task = taskId != Guid.Empty ? await _externalServiceClient.GetTaskAsync(taskId, cancellationToken) : null;
+            var taskTitle = task?.Title ?? "công việc";
+            var projectId = task?.BoardId ?? request.ProjectId ?? Guid.Empty;
+
+            var actorId = request.ActorUserId ?? Guid.Empty;
+            string actorName = "Một thành viên";
+            if (actorId != Guid.Empty)
+            {
+                var actor = await _context.Users.FirstOrDefaultAsync(u => u.Id == actorId, cancellationToken);
+                if (actor != null)
+                {
+                    actorName = actor.FullName;
+                }
+            }
+
+            var assigneeId = request.TargetUserId ?? task?.AssigneeId ?? (request.RecipientUserIds != null && request.RecipientUserIds.Count > 0 ? request.RecipientUserIds.FirstOrDefault() : Guid.Empty);
+            string assigneeName = "người dùng khác";
+            var enabledAssigneeId = Guid.Empty;
+            if (assigneeId != Guid.Empty)
+            {
+                var assigneeUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == assigneeId, cancellationToken);
+                if (assigneeUser != null)
+                {
+                    assigneeName = assigneeUser.FullName;
+                    
+                    var enabledAssigneeIds = await GetUsersEnabledForAsync(new[] { assigneeId }, NotificationType.TaskAssigned, cancellationToken);
+                    if (enabledAssigneeIds.Contains(assigneeId) && assigneeId != actorId)
+                    {
+                        enabledAssigneeId = assigneeId;
+                    }
+                }
+            }
+
+            // Extract tagged users
+            var taggedUsernames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrEmpty(request.Message))
+            {
+                taggedUsernames.UnionWith(ExtractMentionedUsernames(request.Message));
+            }
+            if (!string.IsNullOrEmpty(request.Detail))
+            {
+                taggedUsernames.UnionWith(ExtractMentionedUsernames(request.Detail));
+            }
+            if (task != null)
+            {
+                if (!string.IsNullOrEmpty(task.Title))
+                {
+                    taggedUsernames.UnionWith(ExtractMentionedUsernames(task.Title));
+                }
+                if (!string.IsNullOrEmpty(task.Description))
+                {
+                    taggedUsernames.UnionWith(ExtractMentionedUsernames(task.Description));
+                }
+            }
+
+            var taggedUserIds = new HashSet<Guid>();
+            if (taggedUsernames.Count > 0)
+            {
+                var users = await _context.Users
+                    .Where(u => u.IsActive && taggedUsernames.Contains(u.Username))
+                    .Select(u => u.Id)
+                    .ToListAsync(cancellationToken);
+                taggedUserIds.UnionWith(users);
+            }
+
+            var enabledTaggedUserIds = await GetUsersEnabledForAsync(taggedUserIds, NotificationType.CommentMention, cancellationToken);
+            enabledTaggedUserIds.Remove(actorId);
+            if (enabledAssigneeId != Guid.Empty)
+            {
+                enabledTaggedUserIds.Remove(enabledAssigneeId);
+            }
+
+            // Project members
+            var projectMemberIds = new HashSet<Guid>();
+            if (projectId != Guid.Empty)
+            {
+                var members = await _externalServiceClient.GetProjectMembersAsync(projectId, cancellationToken);
+                if (members != null)
+                {
+                    projectMemberIds.UnionWith(members.Select(m => m.UserId).Where(id => id != Guid.Empty));
+                }
+            }
+
+            // Ensure active local users
+            var activeProjectMemberIds = new HashSet<Guid>();
+            if (projectMemberIds.Count > 0)
+            {
+                var activeLocalMembers = await _context.Users
+                    .Where(u => u.IsActive && projectMemberIds.Contains(u.Id))
+                    .Select(u => u.Id)
+                    .ToListAsync(cancellationToken);
+                activeProjectMemberIds.UnionWith(activeLocalMembers);
+            }
+
+            var enabledProjectMemberIds = await GetUsersEnabledForAsync(activeProjectMemberIds, NotificationType.TaskAssigned, cancellationToken);
+            enabledProjectMemberIds.Remove(actorId);
+            if (enabledAssigneeId != Guid.Empty)
+            {
+                enabledProjectMemberIds.Remove(enabledAssigneeId);
+            }
+            foreach (var id in enabledTaggedUserIds)
+            {
+                enabledProjectMemberIds.Remove(id);
+            }
+
+            var assignmentNow = DateTime.UtcNow;
+            var assignmentNotifications = new List<Notification>();
+
+            // 1. Assignee
+            if (enabledAssigneeId != Guid.Empty)
+            {
+                var messageText = request.Message ?? $"Bạn đã được {actorName} phân công vào công việc '{taskTitle}'.";
+                var notif = new Notification
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = enabledAssigneeId,
+                    Type = NotificationType.TaskAssigned,
+                    Message = messageText,
+                    ReferenceId = referenceId,
+                    ReferenceType = referenceType,
+                    IsRead = false,
+                    CreatedAt = assignmentNow
+                };
+                _context.Notifications.Add(notif);
+                assignmentNotifications.Add(notif);
+            }
+
+            // 2. Tagged users
+            foreach (var userId in enabledTaggedUserIds)
+            {
+                var messageText = $"Bạn đã được nhắc đến trong công việc '{taskTitle}' bởi {actorName}.";
+                var notif = new Notification
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    Type = NotificationType.CommentMention,
+                    Message = messageText,
+                    ReferenceId = referenceId,
+                    ReferenceType = referenceType,
+                    IsRead = false,
+                    CreatedAt = assignmentNow
+                };
+                _context.Notifications.Add(notif);
+                assignmentNotifications.Add(notif);
+            }
+
+            // 3. Project members
+            foreach (var userId in enabledProjectMemberIds)
+            {
+                var messageText = $"{actorName} đã giao công việc '{taskTitle}' cho {assigneeName}.";
+                var notif = new Notification
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    Type = NotificationType.TaskAssigned,
+                    Message = messageText,
+                    ReferenceId = referenceId,
+                    ReferenceType = referenceType,
+                    IsRead = false,
+                    CreatedAt = assignmentNow
+                };
+                _context.Notifications.Add(notif);
+                assignmentNotifications.Add(notif);
+            }
+
+            AddActivityLogIfNeeded(request, notificationType, assignmentNow);
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            // Push SignalR notifications
+            foreach (var notif in assignmentNotifications)
+            {
+                try
+                {
+                    await _hubContext.Clients.Group(notif.UserId.ToString()).SendAsync("ReceiveNotification", new
+                    {
+                        id = notif.Id,
+                        userId = notif.UserId,
+                        type = notif.Type.ToString(),
+                        message = notif.Message,
+                        referenceId = notif.ReferenceId,
+                        referenceType = notif.ReferenceType.ToString(),
+                        isRead = notif.IsRead,
+                        createdAt = notif.CreatedAt
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error pushing real-time notification: {ex.Message}");
+                }
+            }
+
+            return NotificationEventResult.Success(assignmentNotifications.Count, "Event consumed and notifications created.");
         }
 
         var recipients = await ResolveRecipientsAsync(request, notificationType, cancellationToken);
