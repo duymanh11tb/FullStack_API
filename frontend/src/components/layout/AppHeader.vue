@@ -224,9 +224,11 @@ function handleClickOutside(e) {
 
 watch(userId, (newUserId) => {
   if (newUserId) {
+    notifStore.loadNotifications()
     notifStore.startSignalR(newUserId)
   } else {
     notifStore.stopSignalR()
+    notifStore.notifications = []
   }
 })
 
