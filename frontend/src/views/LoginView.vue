@@ -264,7 +264,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { forgotPassword } from '../api/notifyApi'
+import { forgotPassword, linkGithub } from '../api/notifyApi'
 import axios from 'axios'
 
 const router = useRouter()
@@ -330,6 +330,17 @@ onMounted(async () => {
     authStore.loading = true
     authStore.error = null
     try {
+      if (state === 'github-link') {
+        await linkGithub({
+          code: code,
+          redirectUri: CALLBACK_URL
+        })
+        alert('Liên kết tài khoản GitHub thành công!')
+        await authStore.fetchUser()
+        router.push({ path: '/settings', query: { tab: 'integrations' } })
+        return
+      }
+
       let endpoint = ''
       if (state === 'google') {
         endpoint = import.meta.env.VITE_NOTIFY_API_URL + '/api/Auth/google-login'
@@ -352,7 +363,12 @@ onMounted(async () => {
       }
     } catch (err) {
       console.error('Social login error:', err)
-      authStore.error = err.response?.data?.message || 'Đăng nhập bằng mạng xã hội thất bại.'
+      if (state === 'github-link') {
+        alert(err.response?.data?.message || 'Liên kết GitHub thất bại.')
+        router.push({ path: '/settings', query: { tab: 'integrations' } })
+      } else {
+        authStore.error = err.response?.data?.message || 'Đăng nhập bằng mạng xã hội thất bại.'
+      }
     } finally {
       authStore.loading = false
     }

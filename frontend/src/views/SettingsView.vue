@@ -462,11 +462,10 @@ async function saveSettings() {
     savingSettings.value = false
   }
 }
-
 const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || 'Ov23lirIaP5cgYJ7mvKt'
 
 function handleLinkGithub() {
-  const callbackUrl = window.location.origin + '/settings'
+  const callbackUrl = window.location.origin + '/login'
   const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=user:email&state=github-link`
   window.location.href = authUrl
 }
@@ -492,29 +491,7 @@ onMounted(async () => {
   await authStore.fetchUser()
   resetProfileForm()
   await loadSettings()
-
   githubUsername.value = authStore.user?.gitHubUsername || authStore.user?.GitHubUsername || ''
-
-  // Handle GitHub callback redirection
-  const code = route.query.code
-  const state = route.query.state
-  if (code && state === 'github-link') {
-    linking.value = true
-    try {
-      await linkGithub({
-        code: code,
-        redirectUri: window.location.origin + '/settings'
-      })
-      alert('Liên kết tài khoản GitHub thành công!')
-      await authStore.fetchUser()
-      githubUsername.value = authStore.user?.gitHubUsername || authStore.user?.GitHubUsername || ''
-    } catch (err) {
-      alert(err.response?.data?.message || 'Liên kết GitHub thất bại.')
-    } finally {
-      linking.value = false
-      router.replace({ path: '/settings', query: { tab: 'integrations' } })
-    }
-  }
 })
 </script>
 
