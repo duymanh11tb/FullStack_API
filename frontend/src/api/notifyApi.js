@@ -73,6 +73,12 @@ export const changePassword = (data) =>
 export const forgotPassword = (data) =>
   notifyAPI.post('/api/Auth/forgot-password', data)
 
+export const linkGithub = (data) =>
+  notifyAPI.post('/api/Auth/link-github', data)
+
+export const unlinkGithub = () =>
+  notifyAPI.post('/api/Auth/unlink-github')
+
 // ── Events ──
 export const publishEvent = (data) =>
   notifyAPI.post('/api/events/consume', data)

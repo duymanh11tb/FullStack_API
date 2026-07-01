@@ -125,6 +125,7 @@ public class AuthController : ControllerBase
                 u.JobTitle,
                 u.Department,
                 u.Bio,
+                u.GitHubUsername,
                 u.Role,
                 u.CreatedAt
             })
@@ -718,6 +719,118 @@ public class AuthController : ControllerBase
         {
             return StatusCode(500, new { Message = $"An error occurred during GitHub OAuth: {ex.Message}" });
         }
+    }
+
+    [Authorize]
+    [HttpPost("link-github")]
+    public async Task<IActionResult> LinkGithub([FromBody] ExternalLoginRequest request)
+    {
+        if (string.IsNullOrEmpty(request.Code))
+        {
+            return BadRequest(new { Message = "Authorization code is required." });
+        }
+
+        var githubClientId = _configuration["Authentication:GitHub:ClientId"] ?? "Ov23lirIaP5cgYJ7mvKt";
+        var githubClientSecret = _configuration["Authentication:GitHub:ClientSecret"] 
+            ?? Environment.GetEnvironmentVariable("GITHUB_CLIENT_SECRET");
+
+        if (string.IsNullOrEmpty(githubClientSecret))
+        {
+            return BadRequest(new { Message = "GitHub Client Secret is not configured on the server." });
+        }
+
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "ProTask-App");
+
+            // 1. Exchange code for access token
+            var tokenParams = new Dictionary<string, string>
+            {
+                { "code", request.Code },
+                { "client_id", githubClientId },
+                { "client_secret", githubClientSecret },
+                { "redirect_uri", request.RedirectUri }
+            };
+
+            var tokenResponse = await httpClient.PostAsync("https://github.com/login/oauth/access_token", new FormUrlEncodedContent(tokenParams));
+            var tokenRawResult = await tokenResponse.Content.ReadAsStringAsync();
+            if (!tokenResponse.IsSuccessStatusCode)
+            {
+                return BadRequest(new { Message = $"GitHub token exchange failed: {tokenRawResult}" });
+            }
+
+            var tokenJson = System.Text.Json.Nodes.JsonNode.Parse(tokenRawResult);
+            var accessToken = tokenJson?["access_token"]?.ToString();
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                return BadRequest(new { Message = "Access token was not returned from GitHub." });
+            }
+
+            // 2. Fetch GitHub user profile
+            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+            var profileResponse = await httpClient.GetAsync("https://api.github.com/user");
+            var profileRawResult = await profileResponse.Content.ReadAsStringAsync();
+            if (!profileResponse.IsSuccessStatusCode)
+            {
+                return BadRequest(new { Message = $"Failed to retrieve GitHub profile: {profileRawResult}" });
+            }
+
+            var profileJson = System.Text.Json.Nodes.JsonNode.Parse(profileRawResult);
+            var githubLogin = profileJson?["login"]?.ToString();
+
+            if (string.IsNullOrEmpty(githubLogin))
+            {
+                return BadRequest(new { Message = "Failed to retrieve username from GitHub profile." });
+            }
+
+            // 3. Save GitHubUsername to current user
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+            {
+                return NotFound(new { Message = "User not found." });
+            }
+
+            user.GitHubUsername = githubLogin;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "GitHub linked successfully.", GitHubUsername = githubLogin });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = $"An error occurred during GitHub link: {ex.Message}" });
+        }
+    }
+
+    [Authorize]
+    [HttpPost("unlink-github")]
+    public async Task<IActionResult> UnlinkGithub()
+    {
+        var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found." });
+        }
+
+        user.GitHubUsername = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { Message = "GitHub unlinked successfully." });
     }
 }
 

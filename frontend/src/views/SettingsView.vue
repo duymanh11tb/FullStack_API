@@ -298,9 +298,14 @@
                 </svg>
                 <div class="integration-info">
                   <h4>GitHub Account</h4>
-                  <p class="text-muted">Tích hợp repository và các commit liên quan tới task</p>
+                  <p class="text-muted" v-if="githubUsername">Đã liên kết tài khoản GitHub: <strong>{{ githubUsername }}</strong></p>
+                  <p class="text-muted" v-else>Tích hợp repository và các commit liên quan tới task</p>
                 </div>
-                <button class="btn-connect">Kết nối tài khoản</button>
+                <div class="integration-actions" style="display: flex; gap: 8px; align-items: center;">
+                  <span v-if="githubUsername" class="status-badge success" style="margin: 0;">Đã liên kết</span>
+                  <button v-if="githubUsername" class="btn-connect" @click="handleUnlinkGithub" :disabled="linking" style="background-color: var(--color-error, #ef4444);">Hủy liên kết</button>
+                  <button v-else class="btn-connect" @click="handleLinkGithub" :disabled="linking">Kết nối tài khoản</button>
+                </div>
               </div>
             </div>
           </div>
@@ -312,15 +317,20 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { getNotificationSettings, updateNotificationSettings, updateProfile, changePassword } from '../api/notifyApi'
+import { useRoute, useRouter } from 'vue-router'
+import { getNotificationSettings, updateNotificationSettings, updateProfile, changePassword, linkGithub, unlinkGithub } from '../api/notifyApi'
 import { useAuthStore } from '../stores/auth'
 import BaseButton from '../components/common/BaseButton.vue'
 import LoadingSpinner from '../components/common/LoadingSpinner.vue'
 
+const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 
 const loading = ref(true)
-const activeTab = ref('general')
+const activeTab = ref(route.query.tab || 'general')
+const linking = ref(false)
+const githubUsername = ref('')
 
 const tabs = [
   { id: 'general', name: 'Thông tin cá nhân' },
@@ -356,6 +366,7 @@ function resetProfileForm() {
     profileForm.jobTitle = authStore.user.jobTitle || authStore.user.JobTitle || ''
     profileForm.department = authStore.user.department || authStore.user.Department || ''
     profileForm.bio = authStore.user.bio || authStore.user.Bio || ''
+    githubUsername.value = authStore.user.gitHubUsername || authStore.user.GitHubUsername || ''
   }
 }
 
@@ -452,10 +463,58 @@ async function saveSettings() {
   }
 }
 
+const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || 'Ov23lirIaP5cgYJ7mvKt'
+
+function handleLinkGithub() {
+  const callbackUrl = window.location.origin + '/settings'
+  const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=user:email&state=github-link`
+  window.location.href = authUrl
+}
+
+async function handleUnlinkGithub() {
+  if (!confirm('Bạn có chắc chắn muốn hủy liên kết tài khoản GitHub không?')) {
+    return
+  }
+  linking.value = true
+  try {
+    await unlinkGithub()
+    alert('Hủy liên kết tài khoản GitHub thành công!')
+    await authStore.fetchUser()
+    githubUsername.value = ''
+  } catch (err) {
+    alert(err.response?.data?.message || 'Hủy liên kết GitHub thất bại.')
+  } finally {
+    linking.value = false
+  }
+}
+
 onMounted(async () => {
   await authStore.fetchUser()
   resetProfileForm()
   await loadSettings()
+
+  githubUsername.value = authStore.user?.gitHubUsername || authStore.user?.GitHubUsername || ''
+
+  // Handle GitHub callback redirection
+  const code = route.query.code
+  const state = route.query.state
+  if (code && state === 'github-link') {
+    linking.value = true
+    try {
+      await linkGithub({
+        code: code,
+        redirectUri: window.location.origin + '/settings'
+      })
+      alert('Liên kết tài khoản GitHub thành công!')
+      await authStore.fetchUser()
+      githubUsername.value = authStore.user?.gitHubUsername || authStore.user?.GitHubUsername || ''
+    } catch (err) {
+      alert(err.response?.data?.message || 'Liên kết GitHub thất bại.')
+    } finally {
+      linking.value = false
+      router.replace({ path: '/settings', query: { tab: 'integrations' } })
+    }
+  }
 })
 </script>
 

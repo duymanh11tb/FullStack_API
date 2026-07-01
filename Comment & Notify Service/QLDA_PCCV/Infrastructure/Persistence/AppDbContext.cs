@@ -33,6 +33,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(x => x.JobTitle).HasMaxLength(150);
             entity.Property(x => x.Department).HasMaxLength(150);
             entity.Property(x => x.Bio).HasMaxLength(1000);
+            entity.Property(x => x.GitHubUsername).HasMaxLength(200);
             entity.Property(x => x.Role).HasConversion<string>().HasMaxLength(20).HasDefaultValue(UserRole.User).IsRequired();
             entity.Property(x => x.IsActive).HasDefaultValue(true);
             entity.Property(x => x.CreatedAt).HasColumnType("timestamp with time zone").HasDefaultValueSql("CURRENT_TIMESTAMP");

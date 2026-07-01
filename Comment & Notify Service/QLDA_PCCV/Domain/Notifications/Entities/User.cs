@@ -13,6 +13,7 @@ public class User
     public string? JobTitle { get; set; }
     public string? Department { get; set; }
     public string? Bio { get; set; }
+    public string? GitHubUsername { get; set; }
     public UserRole Role { get; set; } = UserRole.User;
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
